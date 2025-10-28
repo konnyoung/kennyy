@@ -1,0 +1,535 @@
+{
+  "languages": {
+    "pt": {
+      "label": "Português (Brasil)"
+    },
+    "pt-pt": {
+      "label": "Português (Portugal)"
+    },
+    "fr": {
+      "label": "Francês"
+    },
+    "en": {
+      "label": "Inglês"
+    }
+  },
+  "commands": {
+    "common": {
+      "embeds": {
+        "error_title": "❌ Erro"
+      },
+      "errors": {
+        "no_track": "❌ Não há música tocando!",
+        "no_track_full": "Não há música tocando no momento.",
+        "bot_not_connected": "❌ Bot não conectado!",
+        "bot_not_connected_full": "O bot não está conectado a um canal de voz.",
+        "user_not_in_voice": "Você precisa estar em um canal de voz!"
+      },
+      "labels": {
+        "artist": "Artista",
+        "duration": "Duração",
+        "position": "Posição",
+        "title": "Título",
+        "unknown_author": "Desconhecido",
+        "unknown_track": "Música desconhecida"
+      }
+    },
+    "language": {
+      "errors": {
+        "guild_only": "Este comando só pode ser usado dentro de um servidor.",
+        "feature_unavailable": "Função de idioma não disponível no momento.",
+        "db_unavailable": "Não consigo salvar as preferências porque a conexão com o banco de dados falhou.",
+        "unsupported": "Este idioma ainda não é suportado.",
+        "no_permission": "Somente administradores podem alterar o idioma deste servidor."
+      },
+      "success": {
+        "already_current": {
+          "title": "Nada mudou!",
+          "description": "Já estamos conversando em {language_label} por aqui."
+        },
+        "updated": {
+          "title": "Idioma atualizado!",
+          "description": "A partir de agora vou falar em {language_label} neste servidor.",
+          "current_language_label": "Idioma atual",
+          "footer": "Use /language novamente para alternar sempre que quiser."
+        },
+        "save_failed": "Não foi possível salvar sua preferência agora. Tente novamente em instantes."
+      }
+    },
+    "play": {
+      "volume": {
+        "decrease": {
+          "title": "🔉 Volume Diminuído"
+        },
+        "increase": {
+          "title": "🔊 Volume Aumentado"
+        },
+        "change": {
+          "description": "Volume alterado de **{old}%** para **{new}%**"
+        },
+        "warning": {
+          "title": "⚠️ Atenção",
+          "description": "Volume acima de 100% pode causar distorção!"
+        },
+        "command": {
+          "invalid_title": "❌ Volume Inválido",
+          "invalid_description": "O volume deve estar entre **0%** e **150%**.",
+          "title": "🔊 Volume Alterado",
+          "description": "Volume alterado de **{old}%** para **{new}%**",
+          "level_label": "Nível do Volume",
+          "level_value": "`{level}%` {bar}",
+          "silenced_title": "🔇 Volume Silenciado",
+          "silenced_description": "Use os botões 🔊 ou o comando /volume para restaurar."
+          }
+      },
+      "previous": {
+        "restarted": "⏮️ Música reiniciada!",
+        "none": "⏮️ Não há música anterior!"
+      },
+      "toggle": {
+        "resumed": "▶️ Reprodução retomada!",
+        "paused": "⏸️ Reprodução pausada!"
+      },
+      "pause": {
+        "resumed_title": "▶️ Reprodução retomada",
+        "resumed_description": "A música **{title}** voltou a tocar.",
+        "paused_title": "⏸️ Reprodução pausada",
+        "paused_description": "A música **{title}** foi pausada."
+      },
+      "stop": {
+        "success": "⏹️ Reprodução parada e fila limpa!",
+        "embed_title": "⏹️ Reprodução Parada",
+        "embed_description": "A reprodução foi parada e a fila foi limpa.",
+        "footer": "Use /play para começar a tocar música novamente!"
+      },
+      "skip": {
+        "success": "⏭️ Música pulada!",
+        "embed_title": "⏭️ Música Pulada",
+        "embed_description": "**{track}** foi pulada.",
+        "next_label": "⏭️ Próxima música",
+        "next_value": "**{title}**\n{author}"
+      },
+      "shuffle": {
+        "empty": "❌ Não há músicas na fila para embaralhar!",
+        "success": "🔀 Fila embaralhada! ({count} músicas)"
+      },
+      "loop": {
+        "button": {
+          "off": "Loop: Desligado",
+          "track": "Loop: Música",
+          "queue": "Loop: Fila"
+        },
+        "responses": {
+          "off": "🔁 Loop desativado.",
+          "track": "🔂 Loop da música atual ativado!",
+          "queue": "🔁 Loop da fila ativado!"
+        }
+      },
+      "autocomplete": {
+        "prompt": "Digite pelo menos 2 caracteres para buscar...",
+        "url_detected": "URL detectada: {value}...",
+        "no_results": "Nenhum resultado encontrado",
+        "error_choice": "Erro na busca: {value}",
+        "unknown_title": "Título desconhecido",
+        "timeout": "⏳ Busca demorando... continue digitando"
+      },
+      "errors": {
+        "user_not_in_voice": "Você precisa estar em um canal de voz!",
+  "same_voice_channel": "Você precisa estar no mesmo canal de voz que o bot para usar estes controles!",
+        "lavalink_validation": "Não foi possível validar a conexão com o Lavalink: {error}",
+        "lavalink_unavailable": {
+          "title": "❌ Lavalink indisponível",
+          "description": "O servidor de áudio não está respondendo no momento. Tente novamente em instantes."
+        },
+        "connect_voice": "Não foi possível conectar ao canal de voz: {error}",
+        "search_failure": "Ocorreu um erro ao buscar a música: {error}",
+        "not_found": {
+          "title": "❌ Não encontrado",
+          "description": "Nenhuma música foi encontrada com esse termo."
+        },
+        "playlist_start": "Não foi possível iniciar a playlist: {error}",
+        "play_start": "Não foi possível iniciar a reprodução: {error}",
+        "process_failure": "Ocorreu um erro ao processar a música: {error}"
+      },
+      "playlist": {
+        "added": {
+          "title": "📋 Playlist Adicionada",
+          "description": "**{name}**\n{count} músicas adicionadas à fila",
+          "stats_name": "📊 Estatísticas",
+          "stats_value": "Total na fila: {queue_count}"
+        }
+      },
+      "start": {
+        "playing_now": "▶️ Tocando agora: **{title}**"
+      },
+      "now_playing": {
+        "title": "🎵 Tocando Agora",
+        "description": "**{title}**",
+        "volume_label": "Volume",
+        "queue_label": "Fila",
+        "status_label": "Status",
+        "requested_by": "👤 Solicitado por",
+        "queue_value": "{count} música(s)",
+        "status": {
+          "playing": "🔄 Reproduzindo"
+        },
+        "footer": "Use os botões abaixo para controlar a reprodução • 🔉🔊 para volume"
+      },
+      "queue": {
+        "added": {
+          "title": "➕ Adicionado à Fila",
+          "description": "**{title}**",
+          "position_label": "Posição na fila",
+          "eta_label": "⏱️ Tempo estimado",
+          "footer": "Total na fila: {count} música(s)"
+        }
+      },
+      "seek": {
+        "errors": {
+          "no_track": "❌ Não estou tocando nenhuma música.",
+          "format": "Formato de tempo inválido.",
+          "out_of_range": "❌ O tempo deve estar entre 0 e {max_seconds}s.",
+          "generic": "❌ Erro ao fazer seek: {error}"
+        },
+        "success": "⏩ Pulado para {timestamp}!"
+      }
+  },
+    "queue": {
+      "embed": {
+        "title": "Fila de Reprodução",
+        "empty_description": "Nenhuma música na fila",
+        "status": {
+          "playing": "Reproduzindo",
+          "paused": "Pausado"
+        },
+        "now_playing": "▶ Tocando Agora",
+        "status_label": "Status",
+        "progress_label": "Progresso",
+        "queue": {
+          "more": "... e mais {remaining} música(s)",
+          "item": "`{index}.` {title} `({duration})`"
+        },
+        "queue_label": "Próximas na Fila",
+        "total_label": "Total de Músicas",
+        "total_value": "{count}",
+        "queue_time_label": "Tempo da Fila",
+        "remaining_time_label": "Tempo Restante",
+          "page_label": "Página",
+        "empty_queue": "Nenhuma música na fila",
+        "empty_total_value": "0",
+        "empty_queue_time": "00:00",
+          "footer": "Atualização em tempo real • Use /skipto para pular para uma música específica"
+      },
+      "labels": {
+        "current_track": "Música Atual"
+      },
+      "skipto": {
+        "errors": {
+          "empty": "Não há músicas na fila para pular.",
+          "invalid_title": "Posição inválida",
+          "invalid_description": "Use um número entre 1 e {max_position}.",
+          "generic": "Não consegui pular para a posição solicitada: {error}"
+        },
+        "success": {
+          "title": "Pulando para a música",
+          "description": "⏭️ Pulando para **{title}**"
+        }
+      },
+      "clear": {
+        "errors": {
+          "empty": "Não há músicas na fila para limpar."
+        },
+        "success": {
+          "title": "Fila Limpa",
+          "removed_label": "Músicas Removidas",
+          "removed_value": "{count}",
+          "current_value": "Continua tocando",
+          "title_value": "{title}"
+        }
+      },
+      "shuffle": {
+        "errors": {
+          "empty": "Não há músicas suficientes na fila para embaralhar."
+        },
+        "success": {
+          "title": "Fila Embaralhada",
+          "shuffled_label": "Músicas Embaralhadas",
+          "shuffled_value": "{count}",
+          "next_track_label": "Próxima Música",
+          "next_track_value": "{title}",
+          "status_label": "Status",
+          "status_value": "Ordem alterada"
+        }
+      },
+      "remove": {
+        "errors": {
+          "empty": "Não há músicas na fila para remover.",
+          "invalid_title": "Posição Inválida",
+          "invalid_description": "Use um número entre 1 e {max_position}."
+        },
+        "success": {
+          "title": "Música Removida",
+          "track_label": "Música",
+          "track_value": "{title}",
+          "position_value": "{position}",
+          "remaining_label": "Fila Restante",
+          "remaining_value": "{count} música(s)"
+        }
+      }
+    },
+    "admin": {
+      "errors": {
+        "no_permission": "❌ Você não tem permissão para usar este comando."
+      },
+      "status": {
+        "labels": {
+          "online": "Online",
+          "dnd": "Não perturbe",
+          "idle": "Ausente",
+          "invisible": "Invisível"
+        }
+      },
+      "setstatus": {
+        "success": {
+          "title": "✅ Status atualizado",
+          "description": "Novo status: **{status_name}**"
+        }
+      },
+      "setpresence": {
+        "errors": {
+          "message_required": "❌ Informe o 'message' para o recado.",
+          "streaming_message_required": "❌ Informe o 'message' para o recado de streaming.",
+          "streaming_url": "❌ Para 'Streaming', forneça uma URL válida (Twitch/YouTube)."
+        },
+        "success": {
+          "title": "✅ Presença atualizada",
+          "cleared": "Atividade limpada",
+          "updated": "Atividade definida: **{activity_label}** — {message}",
+          "url_label": "URL"
+        }
+      },
+      "activity_types": {
+        "playing": "Jogando",
+        "listening": "Ouvindo",
+        "watching": "Assistindo",
+        "competing": "Competindo",
+        "streaming": "Streaming"
+      }
+    },
+    "clearqueue": {
+      "empty": {
+        "title": "Fila Vazia",
+        "description": "Não há músicas na fila para limpar.",
+        "current_label": "🎵 Música Atual",
+        "current_value": "**{title}** continua tocando\n(Use /stop para parar completamente)"
+      },
+      "success": {
+        "title": "🗑️ Fila Limpa",
+        "removed_label": "Músicas Removidas",
+        "removed_value": "{count}",
+        "status_label": "Status da Fila",
+        "status_value": "✅ Limpa",
+        "current_label": "Música Atual",
+        "current_value": "Continua tocando",
+        "now_playing_label": "🎵 Tocando Agora",
+        "now_playing_value": "**{title}**\nPor: {author}",
+        "footer": "Use /play para adicionar novas músicas à fila"
+      }
+    },
+    "filter": {
+      "buttons": {
+        "bass_boost": {
+          "label": "Bass Boost",
+          "activated": "🎵 Bass Boost ativado (nível médio)!",
+          "deactivated": "🎵 Bass Boost desativado!",
+          "error": "❌ Erro ao aplicar bass boost: {error}"
+        },
+        "nightcore": {
+          "label": "Nightcore",
+          "activated": "⚡ Nightcore ativado!",
+          "deactivated": "⚡ Nightcore desativado!",
+          "error": "❌ Erro ao aplicar nightcore: {error}"
+        },
+        "karaoke": {
+          "label": "Karaoke",
+          "activated": "🎤 Karaoke ativado!",
+          "deactivated": "🎤 Karaoke desativado!",
+          "error": "❌ Erro ao aplicar karaoke: {error}"
+        },
+        "rotation": {
+          "label": "8D Audio",
+          "activated": "🌀 8D Audio ativado!",
+          "deactivated": "🌀 8D Audio desativado!",
+          "error": "❌ Erro ao aplicar 8D Audio: {error}"
+        },
+        "reset": {
+          "label": "Reset",
+          "success": "🔄 Todos os filtros foram removidos!",
+          "error": "❌ Erro ao resetar filtros: {error}"
+        }
+      },
+      "filters": {
+        "embed": {
+          "title": "🎛️ Painel de Filtros de Áudio",
+          "description": "Selecione os filtros que deseja aplicar à música:",
+          "now_playing_label": "🎵 Tocando Agora",
+          "now_playing_value": "**{title}**\nPor: {author}",
+          "available_label": "🎛️ Filtros Disponíveis",
+          "available_value": "🎵 **Bass Boost** - Aumenta graves\n⚡ **Nightcore** - Velocidade + pitch\n🎤 **Karaoke** - Remove vocais\n🌀 **8D Audio** - Efeito rotacional\n🔄 **Reset** - Remove todos",
+          "howto_label": "💡 Como usar",
+          "howto_value": "Clique nos botões para ativar/desativar filtros. Filtros ativos ficam azuis.",
+          "footer": "⚠️ Filtros podem causar pequeno delay na aplicação"
+        }
+      },
+      "bassboost": {
+        "off": {
+          "title": "🎵 Bass Boost Desativado",
+          "description": "O bass boost foi removido."
+        },
+        "on": {
+          "title": "🎵 Bass Boost Aplicado",
+          "description": "Bass boost configurado para nível **{level}**",
+          "settings_label": "🔧 Configurações Técnicas"
+        },
+        "errors": {
+          "invalid_title": "❌ Nível Inválido",
+          "invalid_description": "Nível '{level}' não existe. Use: high, medium, low ou off",
+          "generic": "Erro ao aplicar bass boost: {error}"
+        }
+      },
+      "reset": {
+        "title": "🔄 Filtros Resetados",
+        "description": "Todos os filtros de áudio foram removidos.",
+        "removed_label": "✅ Filtros Removidos",
+        "removed_value": "🎵 Bass Boost\n⚡ Nightcore\n🎤 Karaoke\n🌀 8D Audio\nE todos os outros filtros ativos",
+        "now_playing_label": "🎵 Música Atual",
+        "now_playing_value": "**{title}**\nVoltou ao áudio normal",
+        "error": "Erro ao resetar filtros: {error}"
+      }
+    },
+    "help": {
+      "embed": {
+        "title": "📖 Comandos Disponíveis",
+        "no_description": "Sem descrição",
+        "footer": "Total: {count} comando(s)"
+      }
+    },
+    "ping": {
+      "embed": {
+        "title": "🏓 Ping",
+        "footer": "Medições realizadas agora"
+      },
+      "fields": {
+        "discord": {
+          "name": "Discord (Gateway)",
+          "value": "{emoji} `{latency} ms`"
+        },
+        "lavalink": {
+          "label": "{identifier} ({scheme}://{host}:{port})",
+          "value": "{emoji} `{latency} ms` • endpoint: `{endpoint}`"
+        },
+        "lavalink_empty": {
+          "name": "Lavalink",
+          "value": "{emoji} nenhuma configuração encontrada"
+        },
+        "cloudflare": {
+          "name": "1.1.1.1",
+          "value": "{emoji} `{latency} ms` • TCP 443"
+        }
+      }
+    },
+    "lyrics": {
+      "errors": {
+        "no_track": {
+          "title": "❌ Nenhuma música tocando",
+          "description": "Não há música tocando no momento. Use /play para tocar algo primeiro!"
+        },
+        "not_found": {
+          "title": "❌ Não encontrado",
+          "description": "Não consegui encontrar a letra para: **{query}**"
+        },
+        "fetch_failed": {
+          "title": "❌ Erro ao buscar letra",
+          "description": "Encontrei a música mas não consegui extrair a letra."
+        }
+      },
+      "embed": {
+        "title": "🎵 {title}",
+        "footer": "Fonte: {source} • Música atual: {track}"
+      }
+    },
+    "search": {
+      "dropdown": {
+        "option_description": "👤 {author} • ⏱️ {duration}",
+        "placeholder": "🎵 Selecione uma música para tocar...",
+        "errors": {
+          "only_requester": "❌ Apenas quem executou o comando pode usar este menu!",
+          "user_not_in_voice": "❌ Você precisa estar em um canal de voz para tocar música!",
+          "connect_voice": "❌ Erro ao conectar ao canal de voz: {error}",
+          "play": "❌ Erro ao reproduzir música: {error}"
+        },
+        "footer": {
+          "queue": "🔍 Selecionado da busca • Use os botões para controlar",
+          "play": "🔍 Selecionado da busca • Use os botões para controlar"
+        }
+      },
+      "view": {
+        "cancel": {
+          "label": "❌ Cancelar",
+          "errors": {
+            "only_requester": "❌ Apenas quem executou o comando pode cancelar!"
+          },
+          "embed": {
+            "title": "🚫 Busca Cancelada",
+            "description": "Busca por **{query}** foi cancelada."
+          }
+        }
+      },
+      "errors": {
+        "user_not_in_voice": "Você precisa estar em um canal de voz para usar este comando!",
+        "no_results": {
+          "title": "❌ Nenhum Resultado",
+          "description": "Não foram encontradas músicas para: **{query}**",
+          "tips_label": "💡 Dicas",
+          "tips_value": "• Tente termos mais específicos\n• Verifique a ortografia\n• Use nome do artista + música"
+        },
+        "generic": "Ocorreu um erro ao buscar: {error}"
+      },
+      "playlist": {
+        "title": "🔍 Resultados da Busca - Playlist",
+        "description": "**{name}**\nSelecione uma música da playlist:",
+        "info_label": "📋 Informações",
+        "info_value": "Total de músicas: {total}\nExibindo: {showing}"
+      },
+      "results": {
+        "title": "🔍 Resultados da Busca",
+        "description": "Encontrados **{count}** resultados para: **{query}**\nSelecione uma música:",
+        "howto_label": "💡 Como usar",
+        "howto_value": "Use o menu abaixo para selecionar a música desejada",
+        "preview_label": "🎵 Prévia dos Resultados",
+        "preview_item": "`{index}.` **{title}**\n👤 {author} • ⏱️ {duration}",
+        "preview_more": "... e mais **{remaining}** música(s)",
+        "footer": "💡 Use o dropdown abaixo para selecionar • Expira em 5 minutos"
+      }
+    }
+  },
+  "player": {
+    "queue_finished": {
+      "title": "Aw! Acabaram as músicas :(",
+      "description": "Tô saindo aqui, mas você pode me chamar de novo depois!"
+    },
+    "track_failed": {
+      "title": "❌ Não consegui reproduzir",
+      "description": "Não consegui reproduzir **{track}**.\nMotivo: {reason}",
+      "fallback_reason": "Motivo desconhecido (pode ser restrição regional ou indisponibilidade temporária).",
+      "footer": "Vou pular essa faixa e continuar.",
+      "unknown_track": "Faixa desconhecida",
+      "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). Tocando uma alternativa: **{fallback}**"
+    },
+    "lonely": {
+      "pause": "Fiquei sozinho em {call}. Irei pausar a fila por 2 minutos até alguém retornar. Caso contrário, irei me desconectar!",
+      "resume": "Alguém entrou em {call}! Retomando a fila.",
+      "disconnect": "Ninguém voltou para {call}. Irei me desconectar agora."
+    }
+  }
+}

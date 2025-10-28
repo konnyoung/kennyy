@@ -1,0 +1,10 @@
+discord.py>=2.3.2
+wavelink>=3.4.1
+python-dotenv>=1.0.0
+flask>=2.3.0
+flask-discord>=0.1.64
+requests>=2.31.0
+redis>=4.6.0
+PyNaCl>=1.5.0
+rich>=13.0.0
+pymongo[srv]>=4.8.0

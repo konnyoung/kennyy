@@ -1,0 +1,567 @@
+import discord
+from discord.ext import commands
+from discord import app_commands
+import wavelink
+import re
+import asyncio
+
+
+class MusicControlView(discord.ui.View):
+    """View com botões de controle de música"""
+    def __init__(self, bot):
+        super().__init__(timeout=None)  # Sem timeout para controles persistentes
+        self.bot = bot
+
+    @discord.ui.button(emoji="🔉", style=discord.ButtonStyle.secondary, custom_id="volume_down")
+    async def volume_down_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para diminuir volume"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.current:
+            await interaction.response.send_message("❌ Não há música tocando!", ephemeral=True)
+            return
+
+        current_volume = player.volume
+        new_volume = max(current_volume - 10, 0)  # Diminui 10%, mínimo 0%
+        await player.set_volume(new_volume)
+
+        embed = discord.Embed(
+            title="🔉 Volume Diminuído",
+            description=f"Volume alterado de **{current_volume}%** para **{new_volume}%**",
+            color=0x0099ff
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(emoji="🔊", style=discord.ButtonStyle.secondary, custom_id="volume_up")
+    async def volume_up_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para aumentar volume"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.current:
+            await interaction.response.send_message("❌ Não há música tocando!", ephemeral=True)
+            return
+
+        current_volume = player.volume
+        new_volume = min(current_volume + 10, 150)  # Aumenta 10%, máximo 150%
+        await player.set_volume(new_volume)
+
+        embed = discord.Embed(
+            title="🔊 Volume Aumentado",
+            description=f"Volume alterado de **{current_volume}%** para **{new_volume}%**",
+            color=0x0099ff
+        )
+
+        if new_volume > 100:
+            embed.add_field(
+                name="⚠️ Atenção",
+                value="Volume acima de 100% pode causar distorção!",
+                inline=False
+            )
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(emoji="⏮️", style=discord.ButtonStyle.secondary, custom_id="previous")
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para música anterior"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.current:
+            await interaction.response.send_message("❌ Não há música tocando!", ephemeral=True)
+            return
+
+        # Reinicia a música atual se passou de 10 segundos
+        if player.position > 10000:  # 10 segundos em ms
+            await player.seek(0)
+            await interaction.response.send_message("⏮️ Música reiniciada!", ephemeral=True)
+        else:
+            await interaction.response.send_message("⏮️ Não há música anterior!", ephemeral=True)
+
+    @discord.ui.button(emoji="⏯️", style=discord.ButtonStyle.primary, custom_id="play_pause")
+    async def play_pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para pausar/retomar"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.current:
+            await interaction.response.send_message("❌ Não há música tocando!", ephemeral=True)
+            return
+
+        if player.paused:
+            await player.pause(False)
+            await interaction.response.send_message("▶️ Reprodução retomada!", ephemeral=True)
+        else:
+            await player.pause(True)
+            await interaction.response.send_message("⏸️ Reprodução pausada!", ephemeral=True)
+
+    @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, custom_id="stop")
+    async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para parar reprodução"""
+        player = interaction.guild.voice_client
+
+        if not player:
+            await interaction.response.send_message("❌ Bot não conectado!", ephemeral=True)
+            return
+
+        await player.disconnect()
+        await interaction.response.send_message("⏹️ Reprodução parada e fila limpa!", ephemeral=True)
+
+        # Desabilita todos os botões
+        for item in self.children:
+            item.disabled = True
+
+        try:
+            await interaction.edit_original_response(view=self)
+        except:
+            pass
+
+    @discord.ui.button(emoji="⏭️", style=discord.ButtonStyle.secondary, custom_id="skip")
+    async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para pular música"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.playing:
+            await interaction.response.send_message("❌ Não há música tocando!", ephemeral=True)
+            return
+
+        try:
+            await player.skip(force=True)
+        except Exception:
+            await player.stop()
+
+        await interaction.response.send_message("⏭️ Música pulada!", ephemeral=True)
+
+    @discord.ui.button(emoji="🔀", style=discord.ButtonStyle.secondary, custom_id="shuffle")
+    async def shuffle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para embaralhar fila"""
+        player = interaction.guild.voice_client
+
+        if not player or player.queue.is_empty:
+            await interaction.response.send_message("❌ Não há músicas na fila para embaralhar!", ephemeral=True)
+            return
+
+        player.queue.shuffle()
+        await interaction.response.send_message(f"🔀 Fila embaralhada! ({player.queue.count} músicas)", ephemeral=True)
+
+
+class PlayCommands(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    def is_url(self, string):
+        """Verifica se a string é uma URL válida"""
+        url_pattern = re.compile(
+            r'^https?://'
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
+            r'localhost|'
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+            r'(?::\d+)?'
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        return url_pattern.match(string)
+
+    async def search_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Função de autocomplete para buscar músicas"""
+        if not current or len(current) < 2:
+            return [
+                app_commands.Choice(name="Digite pelo menos 2 caracteres para buscar...", value=""),
+            ]
+
+        # Se for uma URL, não mostra sugestões
+        if self.is_url(current):
+            return [
+                app_commands.Choice(name=f"URL detectada: {current[:50]}...", value=current),
+            ]
+
+        try:
+            # Busca no YouTube com o termo digitado
+            search_query = f"ytsearch:{current}"
+            tracks = await interaction.client.search_with_failover(search_query)
+
+            if not tracks:
+                return [
+                    app_commands.Choice(name="Nenhum resultado encontrado", value=current),
+                ]
+
+            # Cria lista de sugestões (máximo 25 por limitação do Discord)
+            choices = []
+            for track in tracks[:25]:
+                duration = self.format_time_from_ms(track.length) if track.length else "N/A"
+                author = track.author[:30] if track.author else "Desconhecido"
+                title = track.title[:50] if track.title else "Título desconhecido"
+
+                display_name = f"🎵 {title} - {author} ({duration})"
+                if len(display_name) > 100:
+                    display_name = display_name[:97] + "..."
+
+                choice_value = track.title or current
+                choices.append(app_commands.Choice(name=display_name, value=choice_value))
+
+            return choices
+
+        except Exception as e:
+            print(f"Erro no autocomplete: {e}")
+            return [
+                app_commands.Choice(name=f"Erro na busca: {current}", value=current),
+            ]
+
+    def format_time_from_ms(self, milliseconds):
+        """Formata tempo de milissegundos para MM:SS"""
+        if milliseconds is None or milliseconds == 0:
+            return "00:00"
+        seconds = int(milliseconds / 1000)
+        minutes = seconds // 60
+        seconds = seconds % 60
+        return f"{minutes:02d}:{seconds:02d}"
+
+    @app_commands.command(name="play", description="Reproduz uma música ou playlist")
+    @app_commands.describe(query="Nome da música, URL do YouTube/Spotify, ou termo de busca")
+    @app_commands.autocomplete(query=search_autocomplete)
+    async def play(self, interaction: discord.Interaction, query: str):
+        """Comando para reproduzir música"""
+        await interaction.response.defer()
+
+        # Verifica se o usuário está em um canal de voz
+        if not interaction.user.voice:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description="Você precisa estar em um canal de voz!",
+                color=0xff0000
+            )
+            return await interaction.followup.send(embed=embed)
+
+        # Conecta ao canal de voz se necessário
+        if not interaction.guild.voice_client:
+            try:
+                player = await interaction.user.voice.channel.connect(cls=wavelink.Player)
+            except Exception as e:
+                embed = discord.Embed(
+                    title="❌ Erro",
+                    description=f"Não foi possível conectar ao canal de voz: {e}",
+                    color=0xff0000
+                )
+                return await interaction.followup.send(embed=embed)
+        else:
+            player = interaction.guild.voice_client
+
+        # Define o canal de texto para mensagens automáticas (fim da playlist)
+        try:
+            player.text_channel = interaction.channel
+        except Exception:
+            pass
+
+        # Busca a música
+        try:
+            if self.is_url(query):
+                tracks = await interaction.client.search_with_failover(query)
+            else:
+                tracks = await interaction.client.search_with_failover(f"ytsearch:{query}")
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description=f"Ocorreu um erro ao buscar a música: {e}",
+                color=0xff0000
+            )
+            return await interaction.followup.send(embed=embed)
+
+        if not tracks:
+            embed = discord.Embed(
+                title="❌ Não encontrado",
+                description="Nenhuma música foi encontrada com esse termo.",
+                color=0xff0000
+            )
+            return await interaction.followup.send(embed=embed)
+
+        try:
+            # Se for uma playlist
+            if isinstance(tracks, wavelink.Playlist):
+                added_count = 0
+                for track in tracks.tracks:
+                    await player.queue.put_wait(track)
+                    added_count += 1
+
+                embed = discord.Embed(
+                    title="📋 Playlist Adicionada",
+                    description=f"**{tracks.name}**\n{added_count} músicas adicionadas à fila",
+                    color=0x00ff00
+                )
+
+                if hasattr(tracks, 'artwork') and tracks.artwork:
+                    embed.set_thumbnail(url=tracks.artwork)
+
+                embed.add_field(
+                    name="📊 Estatísticas",
+                    value=f"Total na fila: {player.queue.count}",
+                    inline=True
+                )
+
+                # Cria view com controles
+                view = MusicControlView(self.bot)
+                await interaction.followup.send(embed=embed, view=view)
+
+                # Se não está tocando, inicia
+                if not player.playing:
+                    next_track = await player.queue.get_wait()
+                    await player.play(next_track)
+            else:
+                track = tracks[0]
+
+                # Se não está tocando nada, toca imediatamente
+                if not player.playing:
+                    await player.play(track)
+
+                    embed = discord.Embed(
+                        title="🎵 Tocando Agora",
+                        description=f"**{track.title}**",
+                        color=0x00ff00
+                    )
+
+                    embed.add_field(name="Artista", value=track.author or "Desconhecido", inline=True)
+                    embed.add_field(name="Duração", value=self.format_time_from_ms(track.length), inline=True)
+                    embed.add_field(name="Volume", value=f"{player.volume}%", inline=True)
+                    embed.add_field(name="Fila", value=f"{player.queue.count} música(s)", inline=True)
+                    embed.add_field(name="Status", value="🔄 Reproduzindo", inline=True)
+                    embed.add_field(name="👤 Solicitado por", value=interaction.user.mention, inline=True)
+
+                    if hasattr(track, 'artwork') and track.artwork:
+                        embed.set_thumbnail(url=track.artwork)
+
+                    embed.set_footer(text="Use os botões abaixo para controlar a reprodução • 🔉🔊 para volume")
+
+                    # Cria view com controles
+                    view = MusicControlView(self.bot)
+                    message = await interaction.followup.send(embed=embed, view=view)
+                    player.current_embed_message = message
+                else:
+                    # Adiciona à fila
+                    await player.queue.put_wait(track)
+
+                    embed = discord.Embed(
+                        title="➕ Adicionado à Fila",
+                        description=f"**{track.title}**",
+                        color=0x0099ff
+                    )
+
+                    embed.add_field(name="Posição na fila", value=f"#{player.queue.count}", inline=True)
+                    embed.add_field(name="Duração", value=self.format_time_from_ms(track.length), inline=True)
+                    embed.add_field(name="👤 Solicitado por", value=interaction.user.mention, inline=True)
+
+                    if hasattr(track, 'artwork') and track.artwork:
+                        embed.set_thumbnail(url=track.artwork)
+
+                    # Calcula tempo estimado até esta música tocar
+                    queue_duration = sum(t.length for t in player.queue if t.length)
+                    if player.current and player.current.length:
+                        remaining_current = player.current.length - player.position
+                        queue_duration += remaining_current
+
+                    embed.add_field(
+                        name="⏱️ Tempo estimado",
+                        value=self.format_time_from_ms(queue_duration),
+                        inline=True
+                    )
+
+                    embed.set_footer(text=f"Total na fila: {player.queue.count} música(s)")
+
+                    # Cria view com controles
+                    view = MusicControlView(self.bot)
+                    await interaction.followup.send(embed=embed, view=view)
+
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description=f"Ocorreu um erro ao processar a música: {e}",
+                color=0xff0000
+            )
+            await interaction.followup.send(embed=embed)
+
+    @app_commands.command(name="volume", description="Controla o volume da reprodução")
+    @app_commands.describe(level="Nível do volume (0-150%)")
+    async def volume(self, interaction: discord.Interaction, level: int):
+        """Comando para controlar volume diretamente"""
+        player = interaction.guild.voice_client
+
+        if not player:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description="O bot não está conectado a um canal de voz.",
+                color=0xff0000
+            )
+            return await interaction.response.send_message(embed=embed)
+
+        if level < 0 or level > 150:
+            embed = discord.Embed(
+                title="❌ Volume Inválido",
+                description="O volume deve estar entre **0%** e **150%**.",
+                color=0xff0000
+            )
+            return await interaction.response.send_message(embed=embed)
+
+        old_volume = player.volume
+        await player.set_volume(level)
+
+        embed = discord.Embed(
+            title="🔊 Volume Alterado",
+            description=f"Volume alterado de **{old_volume}%** para **{level}%**",
+            color=0x00ff00
+        )
+
+        # Indicador visual do volume
+        volume_bar_length = 20
+        filled_length = int((level / 150) * volume_bar_length)
+        volume_bar = '█' * filled_length + '░' * (volume_bar_length - filled_length)
+
+        embed.add_field(
+            name="Nível do Volume",
+            value=f"`{level}%` {volume_bar}",
+            inline=False
+        )
+
+        if level > 100:
+            embed.add_field(
+                name="⚠️ Atenção",
+                value="Volume acima de 100% pode causar distorção!",
+                inline=False
+            )
+        elif level == 0:
+            embed.add_field(
+                name="🔇 Volume Silenciado",
+                value="Use os botões 🔊 ou o comando /volume para restaurar.",
+                inline=False
+            )
+
+        # Adiciona controles de volume
+        view = MusicControlView(self.bot)
+        await interaction.response.send_message(embed=embed, view=view)
+
+    @app_commands.command(name="skip", description="Pula a música atual")
+    async def skip(self, interaction: discord.Interaction):
+        """Pula a música atual"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.playing:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description="Não há música tocando no momento.",
+                color=0xff0000
+            )
+            return await interaction.response.send_message(embed=embed)
+
+        skipped_track = player.current.title if player.current else "Música desconhecida"
+        try:
+            await player.skip(force=True)
+        except Exception:
+            await player.stop()
+
+        embed = discord.Embed(
+            title="⏭️ Música Pulada",
+            description=f"**{skipped_track}** foi pulada.",
+            color=0x00ff00
+        )
+
+        if not player.queue.is_empty:
+            next_track = list(player.queue)[0]
+            embed.add_field(
+                name="⏭️ Próxima música",
+                value=f"**{next_track.title}**\n{next_track.author or 'Desconhecido'}",
+                inline=False
+            )
+
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="stop", description="Para a reprodução e limpa a fila")
+    async def stop(self, interaction: discord.Interaction):
+        """Para a música e limpa a fila"""
+        player = interaction.guild.voice_client
+
+        if not player:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description="O bot não está conectado a um canal de voz.",
+                color=0xff0000
+            )
+            return await interaction.response.send_message(embed=embed)
+
+        await player.disconnect()
+
+        embed = discord.Embed(
+            title="⏹️ Reprodução Parada",
+            description="A reprodução foi parada e a fila foi limpa.",
+            color=0x00ff00
+        )
+        embed.set_footer(text="Use /play para começar a tocar música novamente!")
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="pause", description="Pausa ou retoma a reprodução")
+    async def pause(self, interaction: discord.Interaction):
+        """Pausa ou retoma a música"""
+        player = interaction.guild.voice_client
+
+        if not player or not player.current:
+            embed = discord.Embed(
+                title="❌ Erro",
+                description="Não há música tocando no momento.",
+                color=0xff0000
+            )
+            return await interaction.response.send_message(embed=embed)
+
+        if player.paused:
+            await player.pause(False)
+            embed = discord.Embed(
+                title="▶️ Reprodução Retomada",
+                description=f"**{player.current.title}** foi retomada.",
+                color=0x00ff00
+            )
+        else:
+            await player.pause(True)
+            embed = discord.Embed(
+                title="⏸️ Reprodução Pausada",
+                description=f"**{player.current.title}** foi pausada.",
+                color=0xffff00
+            )
+
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="seek", description="Vai para um tempo específico da música atual. Ex: 2m2s, 90s, 1:30")
+    @app_commands.describe(time="Tempo para ir (ex: 2m2s, 90s, 1:30, 150)")
+    async def seek(self, interaction: discord.Interaction, time: str):
+        """Comando para pular para um tempo específico da música atual."""
+        player = interaction.guild.voice_client
+        if not player or not player.current:
+            return await interaction.response.send_message("❌ Não estou tocando nenhuma música.", ephemeral=True)
+
+        def parse_time(timestr):
+            # Aceita formatos: 1:30, 2m2s, 90s, 150, 1m, 1h2m3s
+            timestr = timestr.strip().lower()
+            if re.match(r"^\d+:\d{1,2}$", timestr):
+                # Formato 1:30
+                parts = timestr.split(":")
+                return int(parts[0]) * 60 * 1000 + int(parts[1]) * 1000
+            total_ms = 0
+            matches = re.findall(r"(\d+)(h|m|s)", timestr)
+            if matches:
+                for value, unit in matches:
+                    value = int(value)
+                    if unit == "h":
+                        total_ms += value * 3600 * 1000
+                    elif unit == "m":
+                        total_ms += value * 60 * 1000
+                    elif unit == "s":
+                        total_ms += value * 1000
+                return total_ms
+            # Só número (segundos)
+            if timestr.isdigit():
+                return int(timestr) * 1000
+            raise ValueError("Formato de tempo inválido.")
+
+        try:
+            ms = parse_time(time)
+            if ms < 0 or ms > player.current.length:
+                return await interaction.response.send_message(f"❌ O tempo deve estar entre 0 e {player.current.length // 1000}s.", ephemeral=True)
+            await player.seek(ms)
+            await interaction.response.send_message(f"⏩ Pulado para {time}!", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Erro ao fazer seek: {e}", ephemeral=True)
+
+
+async def setup(bot):
+    await bot.add_cog(PlayCommands(bot))
+    # Registra a view de controles como persistente (botões continuam após restart)
+    bot.add_view(MusicControlView(bot))
