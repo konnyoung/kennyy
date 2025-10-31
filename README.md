@@ -6,7 +6,7 @@
    </a>
 </p>
 
-Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback, a polished slash-command UX, and an optional Flask dashboard while keeping configuration and secrets in environment files.
+Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback and a polished slash-command UXs.
 
 > Replace `YOUR_CLIENT_ID` with the value you expose via `DISCORD_CLIENT_ID` before sharing the invite link.
 
@@ -116,4 +116,5 @@ Pull requests are welcome! Please accompany significant features with translatio
 ---
 
 Made with ❤️ for the Discord community. Enjoy the music!
+
 
