@@ -1,6 +1,14 @@
 # Kenny Music Bot
 
+<p align="center">
+   <a href="https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2150648832&scope=bot%20applications.commands">
+      <img src="https://img.shields.io/badge/Add%20Kenny%20to%20your%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Add Kenny to your server">
+   </a>
+</p>
+
 Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback, a polished slash-command UX, and an optional Flask dashboard while keeping configuration and secrets in environment files.
+
+> Replace `YOUR_CLIENT_ID` with the value you expose via `DISCORD_CLIENT_ID` before sharing the invite link.
 
 ## Feature Highlights
 - Seamless music playback with queue controls, filters, search, and lyrics powered by Lavalink multi-node failover.
