@@ -1,7 +1,7 @@
 # Kenny Music Bot
 
 <p align="center">
-   <a href="https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2150648832&scope=bot%20applications.commands">
+   <a href="https://discord.com/api/oauth2/authorize?client_id=920133124095098881&permissions=2150648832&scope=bot%20applications.commands">
       <img src="https://img.shields.io/badge/Add%20Kenny%20to%20your%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Add Kenny to your server">
    </a>
 </p>
@@ -116,3 +116,4 @@ Pull requests are welcome! Please accompany significant features with translatio
 ---
 
 Made with ❤️ for the Discord community. Enjoy the music!
+
