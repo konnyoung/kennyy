@@ -54,7 +54,7 @@ class MusicBot(commands.Bot):
         self._live = None
         self._key_listener_started = False
         self._presence_applied = False
-        self.default_language = "pt"
+        self.default_language = "en"
         self.supported_languages: set[str] = set()
         self.locales: dict[str, dict[str, Any]] = {}
         self.locale_dir = Path(os.getenv("LOCALES_DIR", Path(__file__).resolve().parent / "locales"))
@@ -71,7 +71,7 @@ class MusicBot(commands.Bot):
     def _init_mongo(self) -> None:
         uri = os.getenv("MONGODB_URI", "").strip()
         if not uri:
-            print("MONGODB_URI não definido. Os recursos de idioma permanecerão no padrão em português.")
+            print("MONGODB_URI não definido. Os recursos de idioma permanecerão no padrão em inglês.")
             return
 
         try:
@@ -116,7 +116,7 @@ class MusicBot(commands.Bot):
 
         try:
             if not self.locale_dir.exists():
-                print(f"Diretório de locales não encontrado em {self.locale_dir}. Usando apenas mensagens padrão em português.")
+                print(f"Diretório de locales não encontrado em {self.locale_dir}. Usando apenas mensagens padrão em inglês.")
                 return
 
             for locale_file in self.locale_dir.glob("*.json"):
@@ -683,18 +683,7 @@ class MusicBot(commands.Bot):
             print("❌ Nenhum nó Lavalink conectado no momento.")
             return False
 
-        errors: list[str] = []
-        for node in connected_nodes:
-            try:
-                await wavelink.Playable.search("ytsearch:ping", node=node)
-                return True
-            except Exception as exc:
-                errors.append(f"{node.identifier}: {exc}")
-
-        if errors:
-            print("⚠️ Falha ao validar nós Lavalink: " + "; ".join(errors))
-
-        return False
+        return True
 
     async def search_with_failover(self, query: str):
         """Realiza buscas no Lavalink com failover entre os nós configurados."""
@@ -763,17 +752,20 @@ class MusicBot(commands.Bot):
                 try:
                     if self.show_logs:
                         if not panel_paused and live.is_started:
-                            live.stop()
+                            await asyncio.to_thread(live.stop)
                             panel_paused = True
                         await asyncio.sleep(0.5)
                         continue
 
                     if panel_paused:
-                        live.start()
+                        await asyncio.to_thread(live.start)
                         panel_paused = False
 
                     content = self._generate_panel_content()
-                    live.update(Panel(content, title="Painel de Monitoramento", border_style="blue"))
+                    await asyncio.to_thread(
+                        live.update,
+                        Panel(content, title="Painel de Monitoramento", border_style="blue"),
+                    )
                     await asyncio.sleep(1)
                 except asyncio.CancelledError:
                     break
