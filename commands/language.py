@@ -22,6 +22,9 @@ LANGUAGE_OPTIONS = {
     "fr": {
         "emoji": "🇫🇷",
     },
+    "ja": {
+        "emoji": "🇯🇵",
+    },
 }
 
 
@@ -31,7 +34,7 @@ class LanguageCommands(commands.Cog):
 
     @app_commands.command(
         name="language",
-        description="Alterna o idioma padrão do bot neste servidor",
+    description="Change the bot's language for this server",
     )
     @app_commands.describe(language="Escolha o idioma. Deixe em branco para alternar automaticamente.")
     @app_commands.choices(
@@ -40,6 +43,7 @@ class LanguageCommands(commands.Cog):
             app_commands.Choice(name="🇵🇹 Português (Portugal)", value="pt-pt"),
             app_commands.Choice(name="🇺🇸 English", value="en"),
             app_commands.Choice(name="🇫🇷 Français", value="fr"),
+            app_commands.Choice(name="🇯🇵 日本語", value="ja"),
         ]
     )
     async def language(
