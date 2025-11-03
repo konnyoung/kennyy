@@ -11,6 +11,9 @@
     },
     "en": {
       "label": "Anglais"
+    },
+    "ja": {
+      "label": "Japonais"
     }
   },
   "commands": {
