@@ -14,14 +14,13 @@ Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and
 - Automatic channel-status presence updates, lonely-listener auto-pause, and configurable loop/shuffle modes.
 - Persistent guild language preferences and bot presence stored in MongoDB.
 - Fully translated responses (Português BR/PT, English, Français) with JSON-backed localization.
-- Owner-only admin command suite and optional Flask dashboard for remote presence management.
+- Owner-only admin command suite with remote presence management.
 
 ## Project Structure
 ```
 ├── index.py              # Bot entrypoint, event handlers, MongoDB + Lavalink bootstrap
 ├── commands/             # Slash command cogs (play, queue, search, filters, admin, etc.)
 ├── locales/              # Translation dictionaries (pt, pt-pt, en, fr)
-├── web/dashboard.py      # Optional Flask dashboard (loads only if dependencies are present)
 ├── data/presence.json    # Legacy presence fallback (MongoDB preferred)
 ├── requirements.txt      # Python dependencies
 └── README.md             # You are here

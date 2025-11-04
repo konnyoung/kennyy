@@ -13,12 +13,6 @@ from urllib.parse import urlparse, parse_qs
 from pymongo import MongoClient
 from pymongo import errors as pymongo_errors
 
-# Importa o painel web opcionalmente (se Flask não estiver instalado, o bot sobe do mesmo jeito)
-try:
-    from web.dashboard import create_dashboard
-except ImportError:
-    create_dashboard = None
-
 from threading import Thread
 from dotenv import load_dotenv
 from rich.live import Live
@@ -488,24 +482,6 @@ class MusicBot(commands.Bot):
             print("Extensões carregadas com sucesso!")
         except Exception as e:
             print(f"Erro ao carregar extensões: {e}")
-
-        # Painel web (só inicia se Flask estiver disponível)
-        try:
-            if create_dashboard is not None:
-                def _run_web():
-                    app = create_dashboard(self)
-                    app.run(
-                        host=os.getenv("WEB_HOST", "0.0.0.0"),
-                        port=int(os.getenv("WEB_PORT", "5000")),
-                        debug=False,
-                        use_reloader=False
-                    )
-                Thread(target=_run_web, daemon=True).start()
-                print("Painel web iniciado!")
-            else:
-                print("Painel web desativado (instale Flask e flask-discord para ativar).")
-        except Exception as e:
-            print(f"Erro ao iniciar painel web: {e}")
 
         # Log dos intents ativos (debug)
         print(f"Intents: guilds={self.intents.guilds}, voice_states={self.intents.voice_states}, "
