@@ -9,7 +9,7 @@
 Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback and a polished slash-command UXs.
 
 ## Feature Highlights
-- Seamless music playback with queue controls, filters, search, and lyrics powered by Lavalink multi-node failover.
+- Seamless music playback with queue controls, filters, search, and Lavalink-powered lyrics (including live sync when timed data is available).
 - Autocomplete search with aggressive timeouts to avoid Discord "Unknown interaction" errors.
 - Automatic channel-status presence updates, lonely-listener auto-pause, and configurable loop/shuffle modes.
 - Persistent guild language preferences and bot presence stored in MongoDB.
@@ -70,7 +70,7 @@ Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and
 | `/search` | Interactive track search via dropdown. | Cancellable view prevents stale interactions.
 | `/filter` | Apply audio filters. | Bass boost levels, nightcore, karaoke, 8D, reset.
 | `/clearqueue` | Remove upcoming tracks. | Leaves the current track playing.
-| `/lyrics` | Fetch lyrics for the current track. | Uses public APIs with fallback logic.
+| `/lyrics` | Show lyrics for the current track. | Pulls from Lavalink LavaLyrics; auto-syncs timed lines. Enable `lrcLib` (or other providers) for best results.
 | `/language` | Set guild language. | Restricted to administrators; persisted in MongoDB.
 | `/ping` | Health diagnostics. | Reports Discord latency plus per-node Lavalink status.
 | `/admin` | Owner-only presence controls. | Persists status/activity in MongoDB.
@@ -92,6 +92,12 @@ Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and
 - `connect_lavalink` ensures dead sessions are closed and nodes reconnect gracefully.
 - Autocomplete and playback functions automatically promote to the next available node.
 
+## Live Lyrics
+- The `/lyrics` command now requests lyrics exclusively from the Lavalink LavaLyrics plugin and renders them in sync when timestamps are present.
+- For the most stable experience enable the `lrcLib` lyrics provider (no credentials required) in `application.yml` under `plugins.lavasrc.lyrics-sources`.
+- Additional providers (Spotify, Deezer, YouTube, Yandex, etc.) can supplement `lrcLib`; configure their required tokens or cookies to expand coverage.
+- The bot highlights the current line in the embed while the track is playing and reverts to the full lyrics once playback stops or the task finishes.
+
 ## Quality-of-Life Features
 - Lonely channel detection: pauses playback after 2 minutes alone and disconnects if nobody returns.
 - Rich console dashboard using `rich` for real-time logging and Lavalink status.
@@ -107,13 +113,12 @@ Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and
 - **Bot stays silent**: Verify Lavalink is reachable (check `/ping` and console output) and the node password matches.
 - **Slash commands missing**: Ensure the bot has `applications.commands` scope and that sync logs show success on startup.
 - **MongoDB errors**: Confirm the URI includes credentials and database name; Atlas requires IP allow-listing.
-- **Lyrics not found**: The public APIs may rate-limit; try again later or implement a provider with personal credentials.
+- **Lyrics not found**: Ensure at least one LavaLyrics provider is enabled (e.g., `lrcLib`). Other sources may require valid credentials/cookies.
 
 ## Contributing
 Pull requests are welcome! Please accompany significant features with translation updates, add or update tests if applicable.
 ---
 
 Made with ❤️ for the Discord community. Enjoy the music!
-
 
 
