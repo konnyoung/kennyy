@@ -1,10 +1,15 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
 import asyncio
 import re
+
+import aiohttp
+import discord
 import wavelink
-from wavelink.exceptions import LavalinkException, NodeException
+from discord import app_commands
+from discord.ext import commands
+
+
+LRCLIB_API_BASE = "https://lrclib.net/api"
+_TIMESTAMP_REGEX = re.compile(r"\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
 
 
 class LyricsCommands(commands.Cog):
@@ -16,67 +21,33 @@ class LyricsCommands(commands.Cog):
         return self.bot.translate(key, guild_id=interaction.guild_id, default=default, **kwargs)
 
     async def fetch_lyrics(self, player: wavelink.Player, track: wavelink.Playable) -> dict | None:
-        return await self._fetch_from_lavalink(player, track)
+        return await self._fetch_from_lrclib(track)
 
-    async def _fetch_from_lavalink(self, player: wavelink.Player, track: wavelink.Playable) -> dict | None:
-        node = getattr(player, "node", None)
-        if node is None:
+    async def _fetch_from_lrclib(self, track: wavelink.Playable) -> dict | None:
+        if track is None:
             return None
 
-        try:
-            payload = await node.send(
-                path="v4/lyrics",
-                params={
-                    "track": track.encoded,
-                    "skipTrackSource": "true",
-                },
-            )
-        except LavalinkException as exc:
-            if exc.status != 404:
-                print(f"Erro ao buscar letras via Lavalink: {exc}")
-            return None
-        except NodeException as exc:
-            print(f"Falha de comunicação com Lavalink ao buscar letras: {exc}")
-            return None
-        except Exception as exc:  # noqa: BLE001
-            print(f"Erro inesperado ao buscar letras via Lavalink: {exc}")
-            return None
+        payload: dict | None = None
+
+        isrc = self._extract_track_isrc(track)
+        if isrc:
+            payload = await self._lrclib_request("get", {"isrc": isrc})
+
+        if payload is None:
+            for params in self._build_lrclib_queries(track):
+                results = await self._lrclib_request("search", params) or []
+                if not isinstance(results, list):
+                    continue
+                payload = self._select_lrclib_result(results, track)
+                if payload is not None:
+                    break
 
         if not isinstance(payload, dict):
             return None
 
-        text = payload.get("text")
-        raw_lines = payload.get("lines")
-        aggregated_lines: list[str] = []
-        timed_lines: list[dict[str, int | str | None]] = []
+        timed_lines = self._parse_synced_lyrics(payload.get("syncedLyrics"), getattr(track, "length", None))
 
-        if isinstance(raw_lines, list):
-            for item in raw_lines:
-                if not isinstance(item, dict):
-                    continue
-
-                line_text = item.get("line") or ""
-                timestamp = item.get("timestamp")
-                duration = item.get("duration")
-
-                if line_text:
-                    aggregated_lines.append(line_text)
-
-                if isinstance(timestamp, (int, float)):
-                    timed_lines.append(
-                        {
-                            "timestamp": int(timestamp),
-                            "line": line_text,
-                            "duration": int(duration) if isinstance(duration, (int, float)) else None,
-                        }
-                    )
-
-        if not text and aggregated_lines:
-            text = "\n".join(aggregated_lines)
-
-        if timed_lines:
-            timed_lines.sort(key=lambda entry: entry["timestamp"])
-
+        text = payload.get("plainLyrics")
         cleaned = self._clean_lyrics_text(text) if text else None
         if cleaned is None and timed_lines:
             collected = [entry["line"].strip() for entry in timed_lines if entry.get("line")]
@@ -86,19 +57,183 @@ class LyricsCommands(commands.Cog):
             return None
         cleaned = cleaned or ""
 
-        source_name = payload.get("sourceName") or "LavaLyrics"
-        provider = payload.get("provider")
-        source_label = f"{source_name} ({provider})" if provider else source_name
+        language = payload.get("language")
+        source_hint = payload.get("syncedLyricsSource") or payload.get("plainLyricsSource") or "LRCLib"
+        if language:
+            source_label = f"{source_hint} [{language}]"
+        else:
+            source_label = str(source_hint)
 
         return {
-            "title": track.title,
-            "artist": track.author,
+            "title": payload.get("trackName") or track.title,
+            "artist": payload.get("artistName") or track.author,
             "lyrics": cleaned,
             "thumbnail": getattr(track, "artwork", None),
             "url": getattr(track, "uri", None),
             "source": source_label,
             "timed_lines": timed_lines,
         }
+
+    async def _lrclib_request(self, endpoint: str, params: dict[str, str | int]) -> dict | list | None:
+        url = f"{LRCLIB_API_BASE}/{endpoint}"
+        timeout = aiohttp.ClientTimeout(total=12)
+        headers = {"User-Agent": "KennyMusicBot/1.0 (+https://github.com/)"}
+
+        try:
+            async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+                async with session.get(url, params=params) as response:
+                    if response.status == 404:
+                        return None
+                    if response.status != 200:
+                        body = await response.text()
+                        print(f"LRCLib request failed ({response.status}): {body[:200]}")
+                        return None
+                    return await response.json(content_type=None)
+        except asyncio.TimeoutError:
+            print(f"Timeout ao consultar LRCLib em {endpoint} com {params}")
+        except aiohttp.ClientError as exc:
+            print(f"Falha HTTP ao consultar LRCLib: {exc}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"Erro inesperado durante consulta ao LRCLib: {exc}")
+        return None
+
+    def _build_lrclib_queries(self, track: wavelink.Playable) -> list[dict[str, str | int]]:
+        title = getattr(track, "title", "") or ""
+        artist = getattr(track, "author", "") or ""
+        duration_ms = getattr(track, "length", None)
+        duration_seconds = int(round(duration_ms / 1000)) if isinstance(duration_ms, (int, float)) and duration_ms > 0 else None
+
+        queries: list[dict[str, str | int]] = []
+        seen: set[tuple[str, str, int | None]] = set()
+
+        def add_query(track_name: str, artist_name: str) -> None:
+            query_key = (track_name, artist_name, duration_seconds)
+            if query_key in seen:
+                return
+            seen.add(query_key)
+            payload: dict[str, str | int] = {
+                "track_name": track_name,
+                "artist_name": artist_name,
+            }
+            if duration_seconds:
+                payload["duration"] = duration_seconds
+            queries.append(payload)
+
+        add_query(title.strip(), artist.strip())
+
+        normalized_title = self._sanitize_metadata(title)
+        normalized_artist = self._sanitize_metadata(artist)
+        add_query(normalized_title, normalized_artist)
+
+        alt_artist = self._strip_feature_credit(normalized_artist)
+        if alt_artist != normalized_artist:
+            add_query(normalized_title, alt_artist)
+
+        if " - " in normalized_title:
+            main_title = normalized_title.split(" - ", 1)[0].strip()
+            add_query(main_title, alt_artist)
+
+        add_query(normalized_title, "")
+        return queries
+
+    def _select_lrclib_result(self, results: list[dict], track: wavelink.Playable) -> dict | None:
+        valid: list[dict] = []
+        for entry in results:
+            if not isinstance(entry, dict):
+                continue
+            if not entry.get("syncedLyrics") and not entry.get("plainLyrics"):
+                continue
+            valid.append(entry)
+
+        if not valid:
+            return None
+
+        title_target = (getattr(track, "title", "") or "").casefold()
+        artist_target = (getattr(track, "author", "") or "").casefold()
+        duration_ms = getattr(track, "length", None)
+        duration_target = int(round(duration_ms / 1000)) if isinstance(duration_ms, (int, float)) and duration_ms > 0 else None
+
+        for entry in valid:
+            entry_title = str(entry.get("trackName", "")).casefold()
+            entry_artist = str(entry.get("artistName", "")).casefold()
+            if entry_title == title_target and (not artist_target or artist_target in entry_artist or entry_artist in artist_target):
+                return entry
+
+        if duration_target is not None:
+            valid.sort(key=lambda item: abs(duration_target - int(item.get("duration") or duration_target)))
+
+        return valid[0]
+
+    def _parse_synced_lyrics(self, synced: str | None, track_length_ms: int | None) -> list[dict[str, int | str | None]]:
+        if not synced:
+            return []
+
+        timed_entries: list[dict[str, int | str | None]] = []
+        for raw_line in synced.splitlines():
+            matches = list(_TIMESTAMP_REGEX.finditer(raw_line))
+            if not matches:
+                continue
+
+            lyric_text = _TIMESTAMP_REGEX.sub("", raw_line).strip()
+            if not lyric_text:
+                continue
+
+            for match in matches:
+                minutes = int(match.group(1))
+                seconds = int(match.group(2))
+                fraction = (match.group(3) or "0")[:3]
+                fraction = fraction.ljust(3, "0")
+                millis = int(fraction)
+
+                timestamp = minutes * 60000 + seconds * 1000 + millis
+                timed_entries.append({
+                    "timestamp": timestamp,
+                    "line": lyric_text,
+                })
+
+        timed_entries.sort(key=lambda item: item["timestamp"])
+
+        for index, entry in enumerate(timed_entries):
+            next_timestamp: int | None = None
+            if index + 1 < len(timed_entries):
+                next_timestamp = timed_entries[index + 1]["timestamp"]
+            elif isinstance(track_length_ms, int) and track_length_ms > entry["timestamp"]:
+                next_timestamp = track_length_ms
+
+            if isinstance(next_timestamp, int):
+                entry["duration"] = max(0, next_timestamp - entry["timestamp"])
+            else:
+                entry["duration"] = None
+
+        return timed_entries
+
+    def _extract_track_isrc(self, track: wavelink.Playable) -> str | None:
+        isrc = getattr(track, "isrc", None)
+        if isinstance(isrc, str) and isrc.strip():
+            return isrc.strip()
+
+        info = getattr(track, "info", None)
+        if isinstance(info, dict):
+            candidate = info.get("isrc") or info.get("isrcCode")
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+        return None
+
+    def _sanitize_metadata(self, value: str) -> str:
+        if not value:
+            return ""
+        cleaned = re.sub(r"\s*\([^)]*\)", "", value)
+        cleaned = re.sub(r"\s*\[[^]]*\]", "", cleaned)
+        cleaned = re.sub(r"\s*\{[^}]*\}", "", cleaned)
+        cleaned = cleaned.replace("–", "-")
+        return cleaned.strip()
+
+    def _strip_feature_credit(self, artist: str) -> str:
+        if not artist:
+            return ""
+        parts = re.split(r"\s+(?:feat\.|featuring|ft\.)\s+", artist, maxsplit=1, flags=re.IGNORECASE)
+        primary = parts[0].strip()
+        return primary
 
     def _clean_lyrics_text(self, text: str) -> str:
         normalized = text.replace('\r\n', '\n').replace('\r', '\n')
