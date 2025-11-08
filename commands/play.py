@@ -982,7 +982,7 @@ class PlayCommands(commands.Cog):
             self._ensure_loop_mode_attr(rebuilt_player)
             return rebuilt_player
 
-    @app_commands.command(name="play", description="Reproduz uma música ou playlist")
+    @app_commands.command(name="play", description="Play a track or playlist")
     @app_commands.describe(query="Nome da música, URL do YouTube/Spotify, ou termo de busca")
     @app_commands.autocomplete(query=search_autocomplete)
     async def play(self, interaction: discord.Interaction, query: str):
@@ -1189,7 +1189,7 @@ class PlayCommands(commands.Cog):
             )
             await interaction.followup.send(embed=embed)
 
-    @app_commands.command(name="volume", description="Controla o volume da reprodução")
+    @app_commands.command(name="volume", description="Control playback volume")
     @app_commands.describe(level="Nível do volume (0-150%)")
     async def volume(self, interaction: discord.Interaction, level: int):
         """Comando para controlar volume diretamente"""
@@ -1256,7 +1256,7 @@ class PlayCommands(commands.Cog):
         )
         await self._send_interaction_message(interaction, embed=embed, view=view)
 
-    @app_commands.command(name="skip", description="Pula a música atual")
+    @app_commands.command(name="skip", description="Skip the current track")
     async def skip(self, interaction: discord.Interaction):
         """Pula a música atual"""
         player = await self._player_or_error(interaction)
@@ -1305,7 +1305,7 @@ class PlayCommands(commands.Cog):
 
         await self._send_interaction_message(interaction, embed=embed)
 
-    @app_commands.command(name="stop", description="Para a reprodução e limpa a fila")
+    @app_commands.command(name="stop", description="Stop playback and clear the queue")
     async def stop(self, interaction: discord.Interaction):
         """Para a música e limpa a fila"""
         player = await self._player_or_error(interaction)
@@ -1329,7 +1329,7 @@ class PlayCommands(commands.Cog):
         )
         await self._send_interaction_message(interaction, embed=embed)
 
-    @app_commands.command(name="pause", description="Pausa ou retoma a reprodução")
+    @app_commands.command(name="pause", description="Pause or resume playback")
     async def pause(self, interaction: discord.Interaction):
         """Pausa ou retoma a música"""
         player = await self._player_or_error(interaction)
@@ -1369,7 +1369,7 @@ class PlayCommands(commands.Cog):
 
         await self._send_interaction_message(interaction, embed=embed)
 
-    @app_commands.command(name="seek", description="Vai para um tempo específico da música atual. Ex: 2m2s, 90s, 1:30")
+    @app_commands.command(name="seek", description="Seek to a specific position in the current track (e.g. 2m2s, 90s, 1:30)")
     @app_commands.describe(time="Tempo para ir (ex: 2m2s, 90s, 1:30, 150)")
     async def seek(self, interaction: discord.Interaction, time: str):
         """Comando para pular para um tempo específico da música atual."""

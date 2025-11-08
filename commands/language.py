@@ -2,13 +2,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-try:
-    from commands.admin import ALLOWED_ADMIN_IDS as _BOT_ADMIN_IDS
-except Exception:
-    _BOT_ADMIN_IDS: set[int] = set()
-else:
-    _BOT_ADMIN_IDS = set(_BOT_ADMIN_IDS)
-
 LANGUAGE_OPTIONS = {
     "pt": {
         "emoji": "🇧🇷",
@@ -67,7 +60,22 @@ class LanguageCommands(commands.Cog):
             perms = getattr(member, "guild_permissions", None)
             guild_admin = bool(perms and perms.administrator)
 
-        bot_admin = getattr(interaction.user, "id", None) in _BOT_ADMIN_IDS
+        bot_owner_ids: set[int] = set()
+        owner_collection = getattr(bot, "owner_ids", None)
+        if owner_collection:
+            try:
+                bot_owner_ids.update(int(owner_id) for owner_id in owner_collection)
+            except Exception:
+                bot_owner_ids.update(owner_collection)
+
+        fallback_owner = getattr(bot, "owner_id", None)
+        if fallback_owner is not None:
+            try:
+                bot_owner_ids.add(int(fallback_owner))
+            except Exception:
+                pass
+
+        bot_admin = getattr(interaction.user, "id", None) in bot_owner_ids
 
         if not (guild_admin or bot_admin):
             message = bot.translate("commands.language.errors.no_permission", guild_id=interaction.guild.id)

@@ -110,9 +110,7 @@ class FilterControlView(discord.ui.View):
                 )
             else:
                 filters = wavelink.Filters()
-                bands = [wavelink.filters.EqualizerBand(band=i, gain=band_data["gain"])
-                         for i, band_data in enumerate(BASSBOOST_LEVELS["medium"])]
-                filters.equalizer = wavelink.filters.Equalizer(bands=bands)
+                filters.equalizer.set(bands=BASSBOOST_LEVELS["medium"])
 
                 self.active_filters.add("bass_boost")
                 button.style = discord.ButtonStyle.primary
@@ -122,7 +120,7 @@ class FilterControlView(discord.ui.View):
                     default="🎵 Bass Boost ativado (nível médio)!",
                 )
 
-            await self.player.set_filter(filters)
+            await self.player.set_filters(filters)
             await interaction.response.send_message(message, ephemeral=True)
 
         except Exception as e:
@@ -152,7 +150,7 @@ class FilterControlView(discord.ui.View):
                 )
             else:
                 filters = wavelink.Filters()
-                filters.timescale = {"speed": 1.25, "pitch": 1.3, "rate": 1.0}
+                filters.timescale.set(speed=1.25, pitch=1.3, rate=1.0)
 
                 self.active_filters.add("nightcore")
                 button.style = discord.ButtonStyle.primary
@@ -162,7 +160,7 @@ class FilterControlView(discord.ui.View):
                     default="⚡ Nightcore ativado!",
                 )
 
-            await self.player.set_filter(filters)
+            await self.player.set_filters(filters)
             await interaction.response.send_message(message, ephemeral=True)
 
         except Exception as e:
@@ -192,12 +190,12 @@ class FilterControlView(discord.ui.View):
                 )
             else:
                 filters = wavelink.Filters()
-                filters.karaoke = {
-                    "level": 1.0,
-                    "monoLevel": 1.0,
-                    "filterBand": 220.0,
-                    "filterWidth": 100.0
-                }
+                filters.karaoke.set(
+                    level=1.0,
+                    mono_level=1.0,
+                    filter_band=220.0,
+                    filter_width=100.0,
+                )
 
                 self.active_filters.add("karaoke")
                 button.style = discord.ButtonStyle.primary
@@ -207,7 +205,7 @@ class FilterControlView(discord.ui.View):
                     default="🎤 Karaoke ativado!",
                 )
 
-            await self.player.set_filter(filters)
+            await self.player.set_filters(filters)
             await interaction.response.send_message(message, ephemeral=True)
 
         except Exception as e:
@@ -237,7 +235,7 @@ class FilterControlView(discord.ui.View):
                 )
             else:
                 filters = wavelink.Filters()
-                filters.rotation = {"rotationHz": 0.2}
+                filters.rotation.set(rotation_hz=0.2)
 
                 self.active_filters.add("rotation")
                 button.style = discord.ButtonStyle.primary
@@ -247,7 +245,7 @@ class FilterControlView(discord.ui.View):
                     default="🌀 8D Audio ativado!",
                 )
 
-            await self.player.set_filter(filters)
+            await self.player.set_filters(filters)
             await interaction.response.send_message(message, ephemeral=True)
 
         except Exception as e:
@@ -267,7 +265,7 @@ class FilterControlView(discord.ui.View):
         """Botão para resetar todos os filtros"""
         try:
             filters = wavelink.Filters()
-            await self.player.set_filter(filters)
+            await self.player.set_filters(filters)
 
             self.active_filters.clear()
             for item in self.children:
@@ -328,19 +326,21 @@ class FilterCommands(commands.Cog):
         if content is None and embed is None:
             return
 
+        view_param = view if view is not None else discord.utils.MISSING
+
         try:
             if interaction.response.is_done():
                 await interaction.followup.send(
                     content=content,
                     embed=embed,
-                    view=view,
+                    view=view_param,
                     ephemeral=ephemeral,
                 )
             else:
                 await interaction.response.send_message(
                     content=content,
                     embed=embed,
-                    view=view,
+                    view=view_param,
                     ephemeral=ephemeral,
                 )
         except (discord.NotFound, discord.HTTPException):
@@ -383,7 +383,7 @@ class FilterCommands(commands.Cog):
 
         return player
 
-    @app_commands.command(name="filters", description="Abre painel de controle de filtros de áudio")
+    @app_commands.command(name="filters", description="Open the audio filter control panel")
     async def filters(self, interaction: discord.Interaction):
         """Comando principal para controle de filtros"""
         player = await self._player_or_error(interaction)
@@ -486,7 +486,7 @@ class FilterCommands(commands.Cog):
         view = FilterControlView(self.bot, player)
         await self._send_interaction_message(interaction, embed=embed, view=view)
 
-    @app_commands.command(name="bassboost", description="Aplica bassboost com nível específico")
+    @app_commands.command(name="bassboost", description="Apply bass boost with a specific level")
     @app_commands.describe(level="Nível do bassboost: high, medium, low, off")
     @app_commands.choices(level=[
         app_commands.Choice(name="High", value="high"),
@@ -505,7 +505,7 @@ class FilterCommands(commands.Cog):
 
             if level_lower == "off":
                 filters = wavelink.Filters()
-                await player.set_filter(filters)
+                await player.set_filters(filters)
 
                 embed = discord.Embed(
                     title=self._translate(
@@ -522,10 +522,8 @@ class FilterCommands(commands.Cog):
                 )
             elif level_lower in BASSBOOST_LEVELS:
                 filters = wavelink.Filters()
-                bands = [wavelink.filters.EqualizerBand(band=i, gain=band_data["gain"])
-                         for i, band_data in enumerate(BASSBOOST_LEVELS[level_lower])]
-                filters.equalizer = wavelink.filters.Equalizer(bands=bands)
-                await player.set_filter(filters)
+                filters.equalizer.set(bands=BASSBOOST_LEVELS[level_lower])
+                await player.set_filters(filters)
 
                 embed = discord.Embed(
                     title=self._translate(
@@ -635,7 +633,7 @@ class FilterCommands(commands.Cog):
             )
             await self._send_interaction_message(interaction, embed=embed)
 
-    @app_commands.command(name="resetfilters", description="Remove todos os filtros de áudio")
+    @app_commands.command(name="resetfilters", description="Remove all audio filters")
     async def resetfilters(self, interaction: discord.Interaction):
         """Comando para resetar todos os filtros"""
         player = await self._player_or_error(interaction)
@@ -644,7 +642,7 @@ class FilterCommands(commands.Cog):
 
         try:
             filters = wavelink.Filters()
-            await player.set_filter(filters)
+            await player.set_filters(filters)
 
             embed = discord.Embed(
                 title=self._translate(

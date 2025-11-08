@@ -90,7 +90,7 @@ class ClearQueueCommands(commands.Cog):
 
         return player
 
-    @app_commands.command(name="clearqueue", description="Limpa todas as músicas da fila")
+    @app_commands.command(name="clearqueue", description="Clear every track in the queue")
     async def clearqueue(self, interaction: discord.Interaction):
         """Limpa toda a fila de reprodução"""
         player = await self._player_or_error(interaction)

@@ -46,12 +46,16 @@ class Ping(commands.Cog):
             if not host:
                 continue
 
+            name = (os.getenv(f"LAVALINK_NODE{idx}_NAME", "") or "").strip()
+            if not name:
+                name = f"node{idx}"
             port = (os.getenv(f"LAVALINK_NODE{idx}_PORT", "2333") or "2333").strip()
             password = os.getenv(f"LAVALINK_NODE{idx}_PASSWORD", "youshallnotpass")
             secure = (os.getenv(f"LAVALINK_NODE{idx}_SECURE", "false") or "false").lower() == "true"
             scheme = "https" if secure else "http"
             configs.append({
                 "identifier": f"node{idx}",
+                "name": name,
                 "secure": secure,
                 "host": host,
                 "port": port,
@@ -63,12 +67,16 @@ class Ping(commands.Cog):
         if not configs:
             host = (os.getenv("LAVALINK_HOST", "") or "").strip()
             if host:
+                name = (os.getenv("LAVALINK_NODE_NAME", "") or "").strip()
+                if not name:
+                    name = "node1"
                 port = (os.getenv("LAVALINK_PORT", "2333") or "2333").strip()
                 password = os.getenv("LAVALINK_PASSWORD", "youshallnotpass")
                 secure = (os.getenv("LAVALINK_SECURE", "false") or "false").lower() == "true"
                 scheme = "https" if secure else "http"
                 configs.append({
                     "identifier": "node1",
+                    "name": name,
                     "secure": secure,
                     "host": host,
                     "port": port,
@@ -128,7 +136,7 @@ class Ping(commands.Cog):
 
         return results
 
-    @app_commands.command(name="ping", description="Mede a latência para o Discord, Lavalink e Cloudflare")
+    @app_commands.command(name="ping", description="Measure latency for Discord, Lavalink, and Cloudflare")
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
@@ -170,16 +178,12 @@ class Ping(commands.Cog):
 
         if lavalink_results:
             for cfg, lavalink_ms, lavalink_ep in lavalink_results:
-                lavalink_label = (
-                    self._translate(
-                        interaction,
-                        "commands.ping.fields.lavalink.label",
-                        default=f"{cfg['identifier']} ({cfg['scheme']}://{cfg['host']}:{cfg['port']})",
-                        identifier=cfg["identifier"],
-                        scheme=cfg["scheme"],
-                        host=cfg["host"],
-                        port=cfg["port"],
-                    )
+                display_name = cfg.get("name") or cfg.get("identifier") or "node"
+                label = self._translate(
+                    interaction,
+                    "commands.ping.fields.lavalink.display_name",
+                    default=f"Lavalink node: {display_name}",
+                    name=display_name,
                 )
                 lavalink_value = (
                     self._translate(
@@ -191,7 +195,7 @@ class Ping(commands.Cog):
                         endpoint=lavalink_ep,
                     )
                 )
-                embed.add_field(name=lavalink_label, value=lavalink_value, inline=False)
+                embed.add_field(name=label, value=lavalink_value, inline=False)
         else:
             embed.add_field(
                 name=self._translate(

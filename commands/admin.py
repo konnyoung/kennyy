@@ -2,11 +2,34 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-ALLOWED_ADMIN_IDS = {794932318783143948, 703468858341851187}
+
+def _resolve_bot_owner_ids(interaction: discord.Interaction) -> set[int]:
+    client = getattr(interaction, "client", None)
+    if client is None:
+        return set()
+
+    owner_ids = getattr(client, "owner_ids", None)
+    if owner_ids:
+        try:
+            return set(int(owner_id) for owner_id in owner_ids)
+        except Exception:
+            return set(owner_ids)
+
+    fallback_owner = getattr(client, "owner_id", None)
+    if fallback_owner is not None:
+        try:
+            return {int(fallback_owner)}
+        except Exception:
+            return set()
+
+    return set()
 
 
 def is_admin(interaction: discord.Interaction) -> bool:
-    return interaction.user and interaction.user.id in ALLOWED_ADMIN_IDS
+    if interaction.user is None:
+        return False
+
+    return interaction.user.id in _resolve_bot_owner_ids(interaction)
 
 
 def serialize_activity(activity: discord.BaseActivity | None) -> dict | None:
@@ -55,7 +78,7 @@ class AdminCommands(commands.Cog):
         self.bot = bot
 
     # Grupo /admin
-    admin = app_commands.Group(name="admin", description="Gerenciamento do bot (somente admin)")
+    admin = app_commands.Group(name="admin", description="Bot management (owner only)")
 
     def _translate(
         self,
@@ -79,7 +102,7 @@ class AdminCommands(commands.Cog):
                 message = self._translate(
                     interaction,
                     "commands.admin.errors.no_permission",
-                    default="❌ Você não tem permissão para usar este comando.",
+                    default="❌ You don't have permission to use this command.",
                 )
                 if interaction.response.is_done():
                     await interaction.followup.send(message, ephemeral=True)
@@ -88,13 +111,13 @@ class AdminCommands(commands.Cog):
             except Exception:
                 pass
 
-    @admin.command(name="setstatus", description="Altera o status do bot (Online, DND, Idle, Invisível)")
-    @app_commands.describe(state="Escolha o status desejado")
+    @admin.command(name="setstatus", description="Change the bot's status (Online, DND, Idle, Invisible)")
+    @app_commands.describe(state="Select the presence status to use")
     @app_commands.choices(state=[
         app_commands.Choice(name="Online", value="online"),
-        app_commands.Choice(name="Não perturbe (DND)", value="dnd"),
-        app_commands.Choice(name="Ausente (Idle)", value="idle"),
-        app_commands.Choice(name="Invisível (Offline)", value="invisible"),
+        app_commands.Choice(name="Do Not Disturb (DND)", value="dnd"),
+        app_commands.Choice(name="Idle", value="idle"),
+        app_commands.Choice(name="Invisible (Offline)", value="invisible"),
     ])
     @app_commands.check(is_admin)
     async def setstatus(self, interaction: discord.Interaction, state: app_commands.Choice[str]):
@@ -140,19 +163,19 @@ class AdminCommands(commands.Cog):
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @admin.command(name="setpresence", description="Altera o recado (Jogando/Ouvindo/Assistindo/Competindo/Streaming)")
+    @admin.command(name="setpresence", description="Update the bot's activity (Playing/Listening/Watching/Competing/Streaming)")
     @app_commands.describe(
-        activity_type="Tipo de atividade (Jogando, Ouvindo, Assistindo, Competindo, Streaming, Limpar)",
-        message="Texto do recado (ex.: nome da música, jogo, etc.)",
-        url="URL para streaming (obrigatório se tipo = Streaming)"
+        activity_type="Select the activity type (Playing, Listening, Watching, Competing, Streaming, Clear)",
+        message="Status message (e.g. music title, game name, etc.)",
+        url="Streaming URL (required when activity type is Streaming)"
     )
     @app_commands.choices(activity_type=[
-        app_commands.Choice(name="Jogando", value="playing"),
-        app_commands.Choice(name="Ouvindo", value="listening"),
-        app_commands.Choice(name="Assistindo", value="watching"),
-        app_commands.Choice(name="Competindo", value="competing"),
+        app_commands.Choice(name="Playing", value="playing"),
+        app_commands.Choice(name="Listening", value="listening"),
+        app_commands.Choice(name="Watching", value="watching"),
+        app_commands.Choice(name="Competing", value="competing"),
         app_commands.Choice(name="Streaming", value="streaming"),
-        app_commands.Choice(name="Limpar", value="clear"),
+        app_commands.Choice(name="Clear", value="clear"),
     ])
     @app_commands.check(is_admin)
     async def setpresence(

@@ -19,6 +19,8 @@ class QueueControlView(discord.ui.View):
         self.page = 0
         self.message: discord.Message | None = None
 
+        self._apply_loop_button_state()
+
     def attach_message(self, message: discord.Message) -> None:
         self.message = message
 
@@ -40,6 +42,15 @@ class QueueControlView(discord.ui.View):
             return translator(key, guild_id=guild_id, default=default, **kwargs)
         return default if default is not None else key
 
+    def _translate_static(self, key: str, *, default: str | None = None, **kwargs) -> str:
+        translator = getattr(self.bot, "translate", None)
+        guild_id = None
+        if self.player and getattr(self.player, "guild", None):
+            guild_id = self.player.guild.id
+        if translator:
+            return translator(key, guild_id=guild_id, default=default, **kwargs)
+        return default if default is not None else key
+
     def _coerce_player(self, interaction: discord.Interaction | None) -> wavelink.Player | None:
         if interaction and interaction.guild:
             candidate = resolve_wavelink_player(self.bot, interaction.guild)
@@ -47,8 +58,53 @@ class QueueControlView(discord.ui.View):
                 self.player = candidate
 
         if not player_is_ready(self.player):
+            self._apply_loop_button_state(wavelink.QueueMode.normal)
             return None
+
+        self._apply_loop_button_state()
         return self.player
+
+    def _apply_loop_button_state(self, mode: wavelink.QueueMode | None = None) -> None:
+        button = getattr(self, "loop_button", None)
+        if not isinstance(button, discord.ui.Button):
+            return
+
+        if mode is None:
+            mode = wavelink.QueueMode.normal
+            if self.player:
+                bot_getter = getattr(self.bot, "_get_loop_mode", None)
+                if callable(bot_getter):
+                    try:
+                        mode = bot_getter(self.player)
+                    except Exception:
+                        mode = wavelink.QueueMode.normal
+                if mode is wavelink.QueueMode.normal:
+                    queue_mode = wavelink.QueueMode.normal
+                    if getattr(self.player, "queue", None):
+                        queue_mode = getattr(self.player.queue, "mode", wavelink.QueueMode.normal)
+                    mode = getattr(self.player, "loop_mode_override", queue_mode)
+
+        if mode is wavelink.QueueMode.loop:
+            button.style = discord.ButtonStyle.success
+            label = self._translate_static(
+                "commands.play.loop.button.track",
+                default="Loop: Track",
+            )
+        elif mode is wavelink.QueueMode.loop_all:
+            button.style = discord.ButtonStyle.primary
+            label = self._translate_static(
+                "commands.play.loop.button.queue",
+                default="Loop: Queue",
+            )
+        else:
+            button.style = discord.ButtonStyle.secondary
+            label = self._translate_static(
+                "commands.play.loop.button.off",
+                default="Loop: Off",
+            )
+
+        button.label = label
+        button.emoji = "🔁"
 
     def _update_pagination_buttons(self, page_count: int) -> None:
         try:
@@ -360,6 +416,65 @@ class QueueControlView(discord.ui.View):
         await interaction.response.send_message(message, ephemeral=True)
         await self._edit_with_latest()
 
+    @discord.ui.button(emoji="🔁", style=discord.ButtonStyle.secondary, custom_id="queue_loop")
+    async def loop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        player = self._coerce_player(interaction)
+
+        if not player:
+            message = self._translate(
+                interaction,
+                "commands.common.errors.bot_not_connected",
+                default="❌ Bot não conectado!",
+            )
+            await interaction.response.send_message(message, ephemeral=True)
+            return
+
+        current_mode = getattr(getattr(player, "queue", None), "mode", wavelink.QueueMode.normal)
+
+        if current_mode is wavelink.QueueMode.normal:
+            new_mode = wavelink.QueueMode.loop
+            response_key = "commands.play.loop.responses.track"
+            response_default = "🔂 Loop da música atual ativado!"
+        elif current_mode is wavelink.QueueMode.loop:
+            new_mode = wavelink.QueueMode.loop_all
+            response_key = "commands.play.loop.responses.queue"
+            response_default = "🔁 Loop da fila ativado!"
+        else:
+            new_mode = wavelink.QueueMode.normal
+            response_key = "commands.play.loop.responses.off"
+            response_default = "🔁 Loop desativado."
+
+        apply_loop_mode = getattr(self.bot, "_apply_loop_mode", None)
+        if callable(apply_loop_mode):
+            try:
+                apply_loop_mode(player, new_mode)
+            except Exception:
+                player.queue.mode = new_mode
+                setattr(player, "loop_mode_override", new_mode)
+        else:
+            player.queue.mode = new_mode
+            setattr(player, "loop_mode_override", new_mode)
+        self._apply_loop_button_state(new_mode)
+
+        message = self._translate(
+            interaction,
+            response_key,
+            default=response_default,
+        )
+
+        if not interaction.response.is_done():
+            await interaction.response.send_message(message, ephemeral=True)
+        else:
+            await interaction.followup.send(message, ephemeral=True)
+
+        try:
+            if interaction.message:
+                await interaction.message.edit(view=self)
+        except Exception:
+            pass
+
+        await self._edit_with_latest()
+
     @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.secondary, custom_id="queue_refresh")
     async def refresh_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
@@ -441,19 +556,21 @@ class QueueCommands(commands.Cog):
         if content is None and embed is None:
             return
 
+        view_param = view if view is not None else discord.utils.MISSING
+
         try:
             if interaction.response.is_done():
                 await interaction.followup.send(
                     content=content,
                     embed=embed,
-                    view=view,
+                    view=view_param,
                     ephemeral=ephemeral,
                 )
             else:
                 await interaction.response.send_message(
                     content=content,
                     embed=embed,
-                    view=view,
+                    view=view_param,
                     ephemeral=ephemeral,
                 )
         except (discord.NotFound, discord.HTTPException):
@@ -521,7 +638,7 @@ class QueueCommands(commands.Cog):
         if view.message and view.message.id in self.active_queue_messages:
             del self.active_queue_messages[view.message.id]
 
-    @app_commands.command(name="queue", description="Mostra a fila de reprodução com controles avançados")
+    @app_commands.command(name="queue", description="Show the playback queue with interactive controls")
     async def queue(self, interaction: discord.Interaction):
         """Mostra a fila de músicas com layout organizado em grid"""
         await interaction.response.defer()
@@ -540,7 +657,7 @@ class QueueCommands(commands.Cog):
         if player.current or not player.queue.is_empty:
             asyncio.create_task(self.update_queue_display(player, view))
 
-    @app_commands.command(name="skipto", description="Pula para uma posição específica da fila")
+    @app_commands.command(name="skipto", description="Jump to a specific position in the queue")
     @app_commands.describe(position="Posição da música na fila (1, 2, 3...)")
     async def skipto(self, interaction: discord.Interaction, position: int):
         player = await self._player_or_error(interaction, ephemeral=True)
@@ -656,7 +773,7 @@ class QueueCommands(commands.Cog):
             except Exception as exc:
                 print(f"Falha ao aplicar efeitos de início após skipto: {exc}")
 
-    @app_commands.command(name="clear", description="Limpa toda a fila de reprodução")
+    @app_commands.command(name="clear", description="Clear all upcoming tracks from the queue")
     async def clear(self, interaction: discord.Interaction):
         """Limpa a fila de músicas"""
         player = await self._player_or_error(interaction)
@@ -738,7 +855,7 @@ class QueueCommands(commands.Cog):
         await self._send_interaction_message(interaction, embed=embed)
         await self._refresh_active_views(player)
 
-    @app_commands.command(name="shuffle", description="Embaralha a fila de reprodução")
+    @app_commands.command(name="shuffle", description="Shuffle the current queue")
     async def shuffle(self, interaction: discord.Interaction):
         """Embaralha a fila"""
         player = await self._player_or_error(interaction)
@@ -820,7 +937,7 @@ class QueueCommands(commands.Cog):
         await self._send_interaction_message(interaction, embed=embed)
         await self._refresh_active_views(player)
 
-    @app_commands.command(name="remove", description="Remove uma música específica da fila")
+    @app_commands.command(name="remove", description="Remove a specific track from the queue")
     @app_commands.describe(position="Posição da música na fila (1, 2, 3...)")
     async def remove(self, interaction: discord.Interaction, position: int):
         """Remove uma música da fila por posição"""

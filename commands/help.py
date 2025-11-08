@@ -23,7 +23,7 @@ class Help(commands.Cog):
             return translator(key, guild_id=guild_id, default=default, **kwargs)
         return default if default is not None else key
 
-    @app_commands.command(name="help", description="Mostra a lista de comandos")
+    @app_commands.command(name="help", description="Show the list of commands")
     async def help(self, interaction: discord.Interaction):
         cmds = list(self.bot.tree.get_commands())
         cmds = [c for c in cmds if getattr(c, "parent", None) is None]
@@ -33,7 +33,7 @@ class Help(commands.Cog):
             title=self._translate(
                 interaction,
                 "commands.help.embed.title",
-                default="📖 Comandos Disponíveis",
+                default="📖 Available Commands",
             ),
             color=0x5865F2
         )
@@ -49,7 +49,7 @@ class Help(commands.Cog):
                 description = self._translate(
                     interaction,
                     "commands.help.embed.no_description",
-                    default="Sem descrição",
+                    default="No description",
                 )
             embed.add_field(name=f"/{cmd.name}", value=description, inline=False)
 
@@ -57,7 +57,7 @@ class Help(commands.Cog):
             text=self._translate(
                 interaction,
                 "commands.help.embed.footer",
-                default=f"Total: {len(cmds)} comando(s)",
+                default=f"Total: {len(cmds)} command(s)",
                 count=len(cmds),
             )
         )

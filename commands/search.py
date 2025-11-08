@@ -762,7 +762,7 @@ class SearchCommands(commands.Cog):
             return translator(key, guild_id=guild_id, default=default, **kwargs)
         return default if default is not None else key
 
-    @app_commands.command(name="search", description="Busca músicas e permite selecionar qual tocar")
+    @app_commands.command(name="search", description="Search for tracks and choose which one to play")
     @app_commands.describe(query="Termo de busca ou URL para encontrar músicas")
     async def search(self, interaction: discord.Interaction, query: str):
         """Comando de busca com dropdown de seleção"""
