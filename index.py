@@ -20,6 +20,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from commands.play import MusicControlView
+from commands.logger import BotLogger
 
 # Carrega variáveis de ambiente
 load_dotenv()
@@ -56,15 +57,18 @@ class MusicBot(commands.Bot):
         self.mongo_db = None
         self.language_collection = None
         self.presence_collection = None
+        self.logs_collection = None
         self._mongo_connected = False
         self._alone_tasks: dict[int, asyncio.Task] = {}
         self.owner_ids: set[int] = self._load_owner_ids()
+        self.logger = None
 
         if not self.owner_ids:
             print("Aviso: BOT_OWNER_IDS não definidos. Comandos de administrador do bot ficarão indisponíveis.")
 
         self._init_mongo()
         self._load_locales()
+        self._init_logger()
 
     def _load_owner_ids(self) -> set[int]:
         raw = os.getenv("BOT_OWNER_IDS", "")
@@ -98,6 +102,7 @@ class MusicBot(commands.Bot):
             self.language_collection = self.mongo_db["guild_languages"]
             self.language_collection.create_index("guild_id", unique=True)
             self.presence_collection = self.mongo_db["bot_presence"]
+            self.logs_collection = self.mongo_db["logs_settings"]
             self._mongo_connected = True
             print("MongoDB conectado com sucesso. Preferências de idioma e presença ativadas!")
         except pymongo_errors.OperationFailure as exc:
@@ -106,6 +111,11 @@ class MusicBot(commands.Bot):
             print(f"Não foi possível se conectar ao MongoDB: {exc}")
         except Exception as exc:
             print(f"Erro inesperado ao inicializar MongoDB: {exc}")
+
+    def _init_logger(self) -> None:
+        """Inicializa o sistema de logs do bot"""
+        from commands.logger import BotLogger
+        self.logger = BotLogger(self)
 
     @staticmethod
     def _mongo_db_name_from_uri(uri: str, default: str) -> str:
@@ -574,6 +584,46 @@ class MusicBot(commands.Bot):
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         print(f"Nó Lavalink '{payload.node.identifier}' está pronto!")
 
+    async def on_guild_join(self, guild: discord.Guild):
+        """Evento chamado quando o bot entra em um servidor"""
+        print(f"📥 Bot entrou no servidor: {guild.name} (ID: {guild.id})")
+        
+        # Envia log se o logger estiver configurado
+        if self.logger:
+            try:
+                await self.logger.log_guild_join(guild)
+            except Exception as exc:
+                print(f"Erro ao enviar log de entrada em servidor: {exc}")
+
+    async def on_guild_remove(self, guild: discord.Guild):
+        """Evento chamado quando o bot sai de um servidor"""
+        print(f"📤 Bot saiu do servidor: {guild.name} (ID: {guild.id})")
+        
+        # Envia log se o logger estiver configurado
+        if self.logger:
+            try:
+                await self.logger.log_guild_remove(guild)
+            except Exception as exc:
+                print(f"Erro ao enviar log de saída de servidor: {exc}")
+
+    async def on_error(self, event_method: str, *args, **kwargs):
+        """Manipulador de erros gerais do bot"""
+        import traceback
+        
+        error_msg = traceback.format_exc()
+        print(f"Erro no evento '{event_method}':\n{error_msg}")
+        
+        # Envia log do erro
+        if self.logger:
+            try:
+                await self.logger.log_error(
+                    error_type="Bot Event",
+                    error_message=f"Evento: {event_method}\n{error_msg}",
+                    additional_info=f"Args: {args}, Kwargs: {kwargs}"
+                )
+            except Exception as exc:
+                print(f"Erro ao enviar log de erro geral: {exc}")
+
     async def connect_lavalink(self):
         """Estabelece conexão com o(s) nós Lavalink usando variáveis de ambiente."""
         configs: list[dict[str, str | bool]] = []
@@ -871,6 +921,81 @@ class MusicBot(commands.Bot):
         if not player:
             return
         await self._apply_track_start_effects(player, payload.track)
+        
+        # Envia log de início de música
+        if self.logger and payload.track:
+            try:
+                guild = player.guild
+                channel = getattr(player, "channel", None)
+                
+                # Obtém informações da track
+                track_name = getattr(payload.track, "title", "Unknown")
+                track_url = getattr(payload.track, "uri", None)
+                
+                # Tenta obter a artwork de várias formas
+                artwork_url = None
+                if hasattr(payload.track, "artwork"):
+                    artwork = getattr(payload.track, "artwork", None)
+                    if artwork:
+                        artwork_url = getattr(artwork, "url", None) or str(artwork) if artwork else None
+                
+                # Se não encontrou, tenta pegar do artworkUrl direto (algumas versões do wavelink)
+                if not artwork_url and hasattr(payload.track, "artworkUrl"):
+                    artwork_url = getattr(payload.track, "artworkUrl", None)
+                
+                # Fallback: tenta pegar thumbnail do YouTube se for URL do YouTube
+                if not artwork_url and track_url and "youtube.com" in track_url or "youtu.be" in track_url:
+                    # Extrai o ID do vídeo do YouTube
+                    import re
+                    youtube_patterns = [
+                        r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)',
+                        r'youtube\.com\/embed\/([^&\n?#]+)',
+                    ]
+                    for pattern in youtube_patterns:
+                        match = re.search(pattern, track_url)
+                        if match:
+                            video_id = match.group(1)
+                            artwork_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+                            break
+                
+                # Obtém informações do canal e usuário
+                channel_name = channel.name if channel else "Unknown"
+                
+                # Tenta obter o requester de várias formas
+                requester = getattr(payload.track, "requester", None)
+                requester_name = "Unknown"
+                
+                # Tenta obter de um dicionário personalizado no player
+                if not requester and hasattr(player, "_track_requesters"):
+                    track_id = getattr(payload.track, "identifier", None) or getattr(payload.track, "encoded", None)
+                    if track_id and track_id in player._track_requesters:
+                        requester = player._track_requesters.get(track_id)
+                
+                if requester:
+                    # Se for um objeto discord.Member ou discord.User
+                    if hasattr(requester, "display_name"):
+                        requester_name = f"{requester.display_name} (@{requester.name})"
+                    elif hasattr(requester, "name"):
+                        requester_name = f"@{requester.name}"
+                    elif hasattr(requester, "id"):
+                        requester_name = f"<@{requester.id}>"
+                    else:
+                        requester_name = str(requester)
+                
+                guild_name = guild.name if guild else "Unknown"
+                guild_id = guild.id if guild else None
+                
+                await self.logger.log_music_start(
+                    track_name=track_name,
+                    track_url=track_url,
+                    artwork_url=artwork_url,
+                    channel_name=channel_name,
+                    requester_name=requester_name,
+                    guild_name=guild_name,
+                    guild_id=guild_id,
+                )
+            except Exception as exc:
+                print(f"Erro ao enviar log de início de música: {exc}")
 
     async def _apply_track_start_effects(self, player: wavelink.Player, track: wavelink.Playable | None) -> None:
         if not player:
@@ -1013,6 +1138,24 @@ class MusicBot(commands.Bot):
                     cause or "?",
                 )
             )
+            
+            # Envia log do erro do Lavalink
+            if self.logger:
+                try:
+                    guild = player.guild if hasattr(player, "guild") else None
+                    guild_name = guild.name if guild else None
+                    guild_id = guild.id if guild else None
+                    node_id = player.node.identifier if hasattr(player, 'node') and player.node else "unknown"
+                    error_msg = f"Track: {track_title}\nSeveridade: {severity or '?'}\nMotivo: {message or '?'}"
+                    
+                    await self.logger.log_lavalink_error(
+                        node_identifier=node_id,
+                        error_message=error_msg,
+                        guild_name=guild_name,
+                        guild_id=guild_id,
+                    )
+                except Exception as exc:
+                    print(f"Erro ao enviar log de erro do Lavalink: {exc}")
         else:
             player._last_error = None
 
