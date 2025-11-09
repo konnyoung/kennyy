@@ -12,10 +12,63 @@ LRCLIB_API_BASE = "https://lrclib.net/api"
 _TIMESTAMP_REGEX = re.compile(r"\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
 
 
+class LyricsStopView(discord.ui.View):
+    def __init__(self, lyrics_cog: 'LyricsCommands', guild_id: int, channel_id: int, interaction: discord.Interaction):
+        super().__init__(timeout=300)  # 5 minutos de timeout
+        self.lyrics_cog = lyrics_cog
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        
+        # Atualiza o label do botão baseado no locale do usuário
+        self.stop_lyrics.label = lyrics_cog._translate(
+            interaction,
+            "commands.lyrics.stop_button",
+            default="🛑 Parar"
+        )
+
+    @discord.ui.button(style=discord.ButtonStyle.secondary)
+    async def stop_lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Verifica se o usuário tem permissão para parar (mesmo servidor)
+        if interaction.guild_id != self.guild_id:
+            await interaction.response.send_message(
+                "❌ Você não pode parar as letras de outro servidor.", 
+                ephemeral=True
+            )
+            return
+
+        # Para a tarefa de sincronização
+        self.lyrics_cog._cancel_sync_task(self.guild_id)
+        
+        # Remove o canal da lista de ativos
+        if self.channel_id in self.lyrics_cog._active_lyrics_channels:
+            self.lyrics_cog._active_lyrics_channels.pop(self.channel_id, None)
+
+        # Apaga a embed de letras e mostra mensagem de confirmação
+        try:
+            await interaction.response.send_message(
+                self.lyrics_cog._translate(
+                    interaction,
+                    "commands.lyrics.stopped",
+                    default="⏹️ Sincronização de letras interrompida."
+                ),
+                ephemeral=True
+            )
+            # Apaga a mensagem original com as letras
+            await interaction.message.delete()
+        except (discord.NotFound, discord.HTTPException):
+            pass
+
+    async def on_timeout(self):
+        # Remove automaticamente após timeout
+        if self.channel_id in self.lyrics_cog._active_lyrics_channels:
+            self.lyrics_cog._active_lyrics_channels.pop(self.channel_id, None)
+
+
 class LyricsCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self._sync_tasks: dict[int, asyncio.Task] = {}
+        self._active_lyrics_channels: dict[int, int] = {}  # channel_id -> guild_id
 
     def _translate(self, interaction, key, default="Translation missing", **kwargs):
         return self.bot.translate(key, guild_id=interaction.guild_id, default=default, **kwargs)
@@ -333,6 +386,191 @@ class LyricsCommands(commands.Cog):
         task = self._sync_tasks.pop(guild_id, None)
         if task:
             task.cancel()
+        
+        # Remove qualquer canal ativo deste servidor quando a tarefa é cancelada
+        channels_to_remove = [
+            channel_id for channel_id, stored_guild_id in self._active_lyrics_channels.items()
+            if stored_guild_id == guild_id
+        ]
+        for channel_id in channels_to_remove:
+            self._active_lyrics_channels.pop(channel_id, None)
+
+    async def handle_lyrics_interaction(
+        self,
+        interaction: discord.Interaction,
+        *,
+        ephemeral: bool,
+        player: wavelink.Player | None = None,
+    ) -> None:
+        guild = interaction.guild
+
+        if guild is None:
+            message = self._translate(
+                interaction,
+                "commands.lyrics.errors.guild_only",
+                default="❌ Este comando só funciona em servidores.",
+            )
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(message, ephemeral=True)
+                else:
+                    await interaction.response.send_message(message, ephemeral=True)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+            return
+
+        # Verifica se já há letras ativas neste canal
+        channel_id = interaction.channel_id
+        if not ephemeral and channel_id in self._active_lyrics_channels:
+            warning_message = self._translate(
+                interaction,
+                "commands.lyrics.warnings.already_active",
+                default="⚠️ Já há letras sendo exibidas neste canal.",
+            )
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(warning_message, ephemeral=True)
+                else:
+                    await interaction.response.send_message(warning_message, ephemeral=True)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+            return
+
+        resolved_player: wavelink.Player | None = player or guild.voice_client
+        current_track = getattr(resolved_player, "current", None)
+
+        if resolved_player is None or current_track is None:
+            embed = discord.Embed(
+                title=self._translate(
+                    interaction,
+                    "commands.lyrics.errors.no_track.title",
+                    default="❌ Nenhuma música tocando",
+                ),
+                description=self._translate(
+                    interaction,
+                    "commands.lyrics.errors.no_track.description",
+                    default="Não há música tocando no momento. Use /play para tocar algo primeiro!",
+                ),
+                color=0xff0000,
+            )
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                else:
+                    await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+            return
+
+        searching_embed = discord.Embed(
+            title=self._translate(
+                interaction,
+                "commands.lyrics.searching.title",
+                default="🎶 Procurando letra",
+            ),
+            description=self._translate(
+                interaction,
+                "commands.lyrics.searching.description",
+                default="Procurando a letra de **{song}**...",
+                song=current_track.title,
+            ),
+            color=0x5865F2,
+        )
+        searching_embed.set_footer(
+            text=self._translate(
+                interaction,
+                "commands.lyrics.searching.footer",
+                default="Isso pode demorar alguns segundos.",
+            )
+        )
+
+        message: discord.Message | None = None
+        try:
+            if interaction.response.is_done():
+                message = await interaction.followup.send(embed=searching_embed, ephemeral=ephemeral)
+            else:
+                await interaction.response.send_message(embed=searching_embed, ephemeral=ephemeral)
+                message = await interaction.original_response()
+        except (discord.NotFound, discord.HTTPException):
+            message = None
+
+        lyrics_data = await self.fetch_lyrics(resolved_player, current_track)
+
+        guild_id = interaction.guild_id
+        if guild_id is not None:
+            self._cancel_sync_task(guild_id)
+
+        if not lyrics_data:
+            embed = discord.Embed(
+                title=self._translate(
+                    interaction,
+                    "commands.lyrics.errors.not_found.title",
+                    default="❌ Não encontrado",
+                ),
+                description=self._translate(
+                    interaction,
+                    "commands.lyrics.errors.not_found.description",
+                    default="Não consegui encontrar a letra para: **{query}**",
+                    query=f"{current_track.title} - {current_track.author}",
+                ),
+                color=0xff0000,
+            )
+            try:
+                if message is not None:
+                    await message.edit(embed=embed)
+                elif interaction.response.is_done():
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                else:
+                    await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+            return
+
+        timed_lines = [entry for entry in lyrics_data.get("timed_lines", []) if isinstance(entry, dict)]
+        position_ms = getattr(resolved_player, "position", 0) or 0
+        current_index = self._find_line_index(timed_lines, position_ms) if timed_lines else None
+        snippet = self._render_timed_snippet(timed_lines, current_index) if timed_lines else None
+
+        description = snippet or lyrics_data.get("lyrics") or self._translate(
+            interaction,
+            "commands.lyrics.embed.empty",
+            default="Letra indisponível no momento.",
+        )
+
+        final_embed = self._create_embed(interaction, current_track, lyrics_data, description)
+
+        # Cria a view com botão de parar se há letras sincronizadas e não é ephemeral
+        stop_view = None
+        if timed_lines and guild_id is not None and not ephemeral:
+            stop_view = LyricsStopView(self, guild_id, channel_id, interaction)
+
+        try:
+            if message is not None:
+                await message.edit(embed=final_embed, view=stop_view)
+            elif interaction.response.is_done():
+                await interaction.followup.send(embed=final_embed, view=stop_view, ephemeral=ephemeral)
+            else:
+                await interaction.response.send_message(embed=final_embed, view=stop_view, ephemeral=ephemeral)
+        except (discord.NotFound, discord.HTTPException):
+            return
+
+        # Marca o canal como ativo se não for ephemeral
+        if not ephemeral:
+            self._active_lyrics_channels[channel_id] = guild_id
+
+        if timed_lines and guild_id is not None and message is not None:
+            task = self.bot.loop.create_task(
+                self._sync_lyrics_task(
+                    interaction=interaction,
+                    message=message,
+                    player=resolved_player,
+                    track=current_track,
+                    lyrics_data=lyrics_data,
+                    channel_id=channel_id,
+                    ephemeral=ephemeral,
+                )
+            )
+            self._sync_tasks[guild_id] = task
 
     async def _sync_lyrics_task(
         self,
@@ -341,6 +579,8 @@ class LyricsCommands(commands.Cog):
         player: wavelink.Player,
         track: wavelink.Playable,
         lyrics_data: dict,
+        channel_id: int,
+        ephemeral: bool,
     ) -> None:
         guild_id = interaction.guild_id
         timed_lines = [entry for entry in lyrics_data.get("timed_lines", []) if isinstance(entry, dict)]
@@ -378,6 +618,9 @@ class LyricsCommands(commands.Cog):
         finally:
             if guild_id is not None:
                 self._sync_tasks.pop(guild_id, None)
+            # Remove o canal da lista de ativos quando as letras terminam
+            if not ephemeral and channel_id in self._active_lyrics_channels:
+                self._active_lyrics_channels.pop(channel_id, None)
             if not was_cancelled and lyrics_data.get("lyrics"):
                 try:
                     embed = self._create_embed(interaction, track, lyrics_data, lyrics_data["lyrics"])
@@ -387,82 +630,13 @@ class LyricsCommands(commands.Cog):
 
     @app_commands.command(name="lyrics", description="Show the lyrics for the current track")
     async def lyrics(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-        
-        # Verifica se há música tocando
-        if not interaction.guild:
-            return await interaction.followup.send("❌ Este comando só funciona em servidores.", ephemeral=True)
-        
-        player: wavelink.Player = interaction.guild.voice_client
-        
-        if not player or not player.current:
-            embed = discord.Embed(
-                title=self._translate(
-                    interaction,
-                    "commands.lyrics.errors.no_track.title",
-                    default="❌ Nenhuma música tocando"
-                ),
-                description=self._translate(
-                    interaction,
-                    "commands.lyrics.errors.no_track.description",
-                    default="Não há música tocando no momento. Use /play para tocar algo primeiro!"
-                ),
-                color=0xff0000
-            )
-            return await interaction.followup.send(embed=embed)
-        
-        current_track = player.current
-
-        lyrics_data = await self.fetch_lyrics(player, current_track)
-
-        if not lyrics_data:
-            embed = discord.Embed(
-                title=self._translate(
-                    interaction,
-                    "commands.lyrics.errors.not_found.title",
-                    default="❌ Não encontrado"
-                ),
-                description=self._translate(
-                    interaction,
-                    "commands.lyrics.errors.not_found.description",
-                    default="Não consegui encontrar a letra para: **{query}**",
-                    query=f"{current_track.title} - {current_track.author}"
-                ),
-                color=0xff0000
-            )
-            return await interaction.followup.send(embed=embed)
-        
-        timed_lines = [entry for entry in lyrics_data.get("timed_lines", []) if isinstance(entry, dict)]
-        position_ms = getattr(player, "position", 0) or 0
-        current_index = self._find_line_index(timed_lines, position_ms) if timed_lines else None
-        snippet = self._render_timed_snippet(timed_lines, current_index) if timed_lines else None
-
-        description = snippet or lyrics_data.get("lyrics") or self._translate(
-            interaction,
-            "commands.lyrics.embed.empty",
-            default="Letra indisponível no momento."
-        )
-
-        embed = self._create_embed(interaction, current_track, lyrics_data, description)
-        message = await interaction.followup.send(embed=embed)
-
-        if timed_lines and interaction.guild_id is not None:
-            self._cancel_sync_task(interaction.guild_id)
-            task = self.bot.loop.create_task(
-                self._sync_lyrics_task(
-                    interaction=interaction,
-                    message=message,
-                    player=player,
-                    track=current_track,
-                    lyrics_data=lyrics_data,
-                )
-            )
-            self._sync_tasks[interaction.guild_id] = task
+        await self.handle_lyrics_interaction(interaction, ephemeral=False)
 
     def cog_unload(self) -> None:
         for task in self._sync_tasks.values():
             task.cancel()
         self._sync_tasks.clear()
+        self._active_lyrics_channels.clear()
 
 
 async def setup(bot):

@@ -112,12 +112,12 @@ class AdminCommands(commands.Cog):
                 pass
 
     @admin.command(name="setstatus", description="Change the bot's status (Online, DND, Idle, Invisible)")
-    @app_commands.describe(state="Select the presence status to use")
+    @app_commands.describe(state="Escolha o status desejado")
     @app_commands.choices(state=[
         app_commands.Choice(name="Online", value="online"),
-        app_commands.Choice(name="Do Not Disturb (DND)", value="dnd"),
-        app_commands.Choice(name="Idle", value="idle"),
-        app_commands.Choice(name="Invisible (Offline)", value="invisible"),
+        app_commands.Choice(name="Não perturbe (DND)", value="dnd"),
+        app_commands.Choice(name="Ausente (Idle)", value="idle"),
+        app_commands.Choice(name="Invisível (Offline)", value="invisible"),
     ])
     @app_commands.check(is_admin)
     async def setstatus(self, interaction: discord.Interaction, state: app_commands.Choice[str]):
@@ -165,17 +165,17 @@ class AdminCommands(commands.Cog):
 
     @admin.command(name="setpresence", description="Update the bot's activity (Playing/Listening/Watching/Competing/Streaming)")
     @app_commands.describe(
-        activity_type="Select the activity type (Playing, Listening, Watching, Competing, Streaming, Clear)",
-        message="Status message (e.g. music title, game name, etc.)",
-        url="Streaming URL (required when activity type is Streaming)"
+        activity_type="Tipo de atividade (Jogando, Ouvindo, Assistindo, Competindo, Streaming, Limpar)",
+        message="Texto do recado (ex.: nome da música, jogo, etc.)",
+        url="URL para streaming (obrigatório se tipo = Streaming)"
     )
     @app_commands.choices(activity_type=[
-        app_commands.Choice(name="Playing", value="playing"),
-        app_commands.Choice(name="Listening", value="listening"),
-        app_commands.Choice(name="Watching", value="watching"),
-        app_commands.Choice(name="Competing", value="competing"),
+        app_commands.Choice(name="Jogando", value="playing"),
+        app_commands.Choice(name="Ouvindo", value="listening"),
+        app_commands.Choice(name="Assistindo", value="watching"),
+        app_commands.Choice(name="Competindo", value="competing"),
         app_commands.Choice(name="Streaming", value="streaming"),
-        app_commands.Choice(name="Clear", value="clear"),
+        app_commands.Choice(name="Limpar", value="clear"),
     ])
     @app_commands.check(is_admin)
     async def setpresence(

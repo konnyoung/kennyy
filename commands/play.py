@@ -368,6 +368,44 @@ class MusicControlView(discord.ui.View):
         except Exception:
             pass
 
+    @discord.ui.button(emoji="📜", style=discord.ButtonStyle.secondary, custom_id="play_lyrics", row=1)
+    async def lyrics_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Mostra a letra da música atual"""
+        raw_player = interaction.guild.voice_client
+        player = await self._ensure_control_access(interaction, raw_player)
+        if not player:
+            return
+
+        if not player.current:
+            message = self._translate(
+                interaction,
+                "commands.common.errors.no_track",
+                default="❌ Não há música tocando!",
+            )
+            await self._send_ephemeral(interaction, message)
+            return
+
+        lyrics_cog = self.bot.get_cog("LyricsCommands")
+        if lyrics_cog is None:
+            message = self._translate(
+                interaction,
+                "commands.lyrics.errors.feature_unavailable",
+                default="❌ Letras indisponíveis no momento.",
+            )
+            await self._send_ephemeral(interaction, message)
+            return
+
+        try:
+            await lyrics_cog.handle_lyrics_interaction(interaction, ephemeral=False, player=player)
+        except Exception as exc:
+            print(f"Falha ao exibir letras pela view de reprodução: {exc}")
+            message = self._translate(
+                interaction,
+                "commands.lyrics.errors.feature_unavailable",
+                default="❌ Erro ao buscar letras.",
+            )
+            await self._send_ephemeral(interaction, message)
+
 
 class PlayCommands(commands.Cog):
     def __init__(self, bot):
@@ -414,20 +452,22 @@ class PlayCommands(commands.Cog):
         if content is None and embed is None:
             return
 
+        view_param = view if view is not None else discord.utils.MISSING
+
         try:
             if interaction.response.is_done():
                 await interaction.followup.send(
                     content=content,
                     embed=embed,
                     ephemeral=ephemeral,
-                    view=view,
+                    view=view_param,
                 )
             else:
                 await interaction.response.send_message(
                     content=content,
                     embed=embed,
                     ephemeral=ephemeral,
-                    view=view,
+                    view=view_param,
                 )
         except (discord.NotFound, discord.HTTPException):
             return

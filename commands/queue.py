@@ -1,4 +1,4 @@
-import discord
+﻿import discord
 from discord.ext import commands
 from discord import app_commands
 import wavelink
@@ -474,6 +474,58 @@ class QueueControlView(discord.ui.View):
             pass
 
         await self._edit_with_latest()
+
+    @discord.ui.button(emoji="📜", style=discord.ButtonStyle.secondary, custom_id="queue_lyrics", row=1)
+    async def lyrics_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        player = self._coerce_player(interaction)
+
+        async def respond(message: str) -> None:
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(message, ephemeral=True)
+                else:
+                    await interaction.response.send_message(message, ephemeral=True)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
+        if not player:
+            message = self._translate(
+                interaction,
+                "commands.common.errors.bot_not_connected",
+                default="❌ Bot não conectado!",
+            )
+            await respond(message)
+            return
+
+        if not player.current:
+            message = self._translate(
+                interaction,
+                "commands.common.errors.no_track",
+                default="❌ Não há música tocando!",
+            )
+            await respond(message)
+            return
+
+        lyrics_cog = self.bot.get_cog("LyricsCommands")
+        if lyrics_cog is None:
+            message = self._translate(
+                interaction,
+                "commands.lyrics.errors.feature_unavailable",
+                default="❌ Letras indisponíveis no momento.",
+            )
+            await respond(message)
+            return
+
+        try:
+            await lyrics_cog.handle_lyrics_interaction(interaction, ephemeral=False, player=player)
+        except Exception as exc:
+            print(f"Falha ao exibir letras pela view da fila: {exc}")
+            message = self._translate(
+                interaction,
+                "commands.lyrics.errors.feature_unavailable",
+                default="❌ Erro ao buscar letras.",
+            )
+            await respond(message)
 
     @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.secondary, custom_id="queue_refresh")
     async def refresh_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1048,3 +1100,4 @@ class QueueCommands(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(QueueCommands(bot))
+
