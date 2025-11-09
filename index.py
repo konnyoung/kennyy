@@ -58,9 +58,30 @@ class MusicBot(commands.Bot):
         self.presence_collection = None
         self._mongo_connected = False
         self._alone_tasks: dict[int, asyncio.Task] = {}
+        self.owner_ids: set[int] = self._load_owner_ids()
+
+        if not self.owner_ids:
+            print("Aviso: BOT_OWNER_IDS não definidos. Comandos de administrador do bot ficarão indisponíveis.")
 
         self._init_mongo()
         self._load_locales()
+
+    def _load_owner_ids(self) -> set[int]:
+        raw = os.getenv("BOT_OWNER_IDS", "")
+        owner_ids: set[int] = set()
+
+        if raw:
+            separators = raw.replace(";", ",").split(",")
+            for chunk in separators:
+                value = chunk.strip()
+                if not value:
+                    continue
+                try:
+                    owner_ids.add(int(value))
+                except ValueError:
+                    print(f"Aviso: BOT_OWNER_IDS contém valor inválido '{value}'. Ignorando...")
+
+        return owner_ids
 
     def _init_mongo(self) -> None:
         uri = os.getenv("MONGODB_URI", "").strip()
@@ -468,20 +489,28 @@ class MusicBot(commands.Bot):
             print("Pressione 'l' para alternar entre painel e logs em tempo real.")
 
         # Carrega cogs
-        try:
-            await self.load_extension("commands.play")
-            await self.load_extension("commands.queue")
-            await self.load_extension("commands.clearqueue")
-            await self.load_extension("commands.search")
-            await self.load_extension("commands.filter")
-            await self.load_extension("commands.help")
-            await self.load_extension("commands.admin")
-            await self.load_extension("commands.ping")
-            await self.load_extension("commands.language")
-            await self.load_extension("commands.lyrics")
-            print("Extensões carregadas com sucesso!")
-        except Exception as e:
-            print(f"Erro ao carregar extensões: {e}")
+        extensions = [
+            "commands.play",
+            "commands.queue", 
+            "commands.clearqueue",
+            "commands.search",
+            "commands.filter",
+            "commands.help",
+            "commands.admin",
+            "commands.ping",
+            "commands.language",
+            "commands.lyrics"
+        ]
+        
+        for ext in extensions:
+            try:
+                await self.load_extension(ext)
+                print(f"✅ {ext} carregado")
+            except Exception as e:
+                print(f"❌ Erro ao carregar {ext}: {e}")
+        
+        print("Carregamento de extensões finalizado!")
+        print(f"Cogs carregados: {list(self.cogs.keys())}")
 
         # Log dos intents ativos (debug)
         print(f"Intents: guilds={self.intents.guilds}, voice_states={self.intents.voice_states}, "
