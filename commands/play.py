@@ -1050,6 +1050,22 @@ class PlayCommands(commands.Cog):
                 "commands.play.errors.lavalink_validation",
                 error=e,
             )
+            
+            # Envia log do erro
+            if hasattr(self.bot, 'logger') and self.bot.logger:
+                try:
+                    guild_name = interaction.guild.name if interaction.guild else "DM"
+                    guild_id = interaction.guild.id if interaction.guild else None
+                    await self.bot.logger.log_error(
+                        error_type="Lavalink Connection",
+                        error_message=str(e),
+                        guild_name=guild_name,
+                        guild_id=guild_id,
+                        additional_info=f"Comando: /play\nQuery: {query}\nUsuário: {interaction.user}"
+                    )
+                except Exception as log_exc:
+                    print(f"Erro ao enviar log de falha do Lavalink: {log_exc}")
+            
             return await interaction.followup.send(embed=embed)
 
         if not lavalink_ok:
@@ -1058,6 +1074,22 @@ class PlayCommands(commands.Cog):
                 "commands.play.errors.lavalink_unavailable.title",
                 "commands.play.errors.lavalink_unavailable.description",
             )
+            
+            # Envia log do erro
+            if hasattr(self.bot, 'logger') and self.bot.logger:
+                try:
+                    guild_name = interaction.guild.name if interaction.guild else "DM"
+                    guild_id = interaction.guild.id if interaction.guild else None
+                    await self.bot.logger.log_error(
+                        error_type="Lavalink Unavailable",
+                        error_message="Nenhum nó Lavalink disponível",
+                        guild_name=guild_name,
+                        guild_id=guild_id,
+                        additional_info=f"Comando: /play\nQuery: {query}\nUsuário: {interaction.user}"
+                    )
+                except Exception as log_exc:
+                    print(f"Erro ao enviar log de Lavalink indisponível: {log_exc}")
+            
             return await interaction.followup.send(embed=embed)
 
         try:
@@ -1084,6 +1116,23 @@ class PlayCommands(commands.Cog):
                 "commands.play.errors.search_failure",
                 error=e,
             )
+            
+            # Envia log do erro
+            if hasattr(self.bot, 'logger') and self.bot.logger:
+                try:
+                    guild_name = interaction.guild.name if interaction.guild else "DM"
+                    guild_id = interaction.guild.id if interaction.guild else None
+                    error_msg = str(e)
+                    await self.bot.logger.log_error(
+                        error_type="Search/Load Track",
+                        error_message=error_msg,
+                        guild_name=guild_name,
+                        guild_id=guild_id,
+                        additional_info=f"Query: {query}\nUsuário: {interaction.user}"
+                    )
+                except Exception as log_exc:
+                    print(f"Erro ao enviar log de falha de busca: {log_exc}")
+            
             return await interaction.followup.send(embed=embed)
 
         if not tracks:
@@ -1098,7 +1147,20 @@ class PlayCommands(commands.Cog):
             # Se for uma playlist
             if isinstance(tracks, wavelink.Playlist):
                 added_count = 0
+                
+                # Inicializa o dicionário de requesters se não existir
+                if not hasattr(player, "_track_requesters"):
+                    player._track_requesters = {}
+                
                 for track in tracks.tracks:
+                    # Define quem solicitou a música
+                    track.requester = interaction.user
+                    
+                    # Armazena também em um dicionário personalizado
+                    track_id = getattr(track, "identifier", None) or getattr(track, "encoded", None)
+                    if track_id:
+                        player._track_requesters[track_id] = interaction.user
+                    
                     await player.queue.put_wait(track)
                     added_count += 1
 
@@ -1143,6 +1205,18 @@ class PlayCommands(commands.Cog):
                         return await interaction.followup.send(embed=embed)
             else:
                 track = tracks[0]
+                
+                # Inicializa o dicionário de requesters se não existir
+                if not hasattr(player, "_track_requesters"):
+                    player._track_requesters = {}
+                
+                # Define quem solicitou a música
+                track.requester = interaction.user
+                
+                # Armazena também em um dicionário personalizado
+                track_id = getattr(track, "identifier", None) or getattr(track, "encoded", None)
+                if track_id:
+                    player._track_requesters[track_id] = interaction.user
 
                 # Se não está tocando nada, toca imediatamente
                 if not player.playing:

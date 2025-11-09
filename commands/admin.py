@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+import os
 
 
 def _resolve_bot_owner_ids(interaction: discord.Interaction) -> set[int]:
@@ -79,6 +80,34 @@ class AdminCommands(commands.Cog):
 
     # Grupo /admin
     admin = app_commands.Group(name="admin", description="Bot management (owner only)")
+    
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Check global do Cog - só permite owners"""
+        if interaction.user is None:
+            return False
+        
+        owner_ids = getattr(self.bot, "owner_ids", set())
+        if not owner_ids:
+            # Fallback para owner_id único
+            owner_id = getattr(self.bot, "owner_id", None)
+            if owner_id:
+                owner_ids = {owner_id}
+        
+        is_owner = interaction.user.id in owner_ids
+        
+        if not is_owner:
+            # Responde com mensagem invisível
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(
+                        "❌ Você não tem permissão para usar este comando.",
+                        ephemeral=True
+                    )
+            except:
+                pass
+            return False
+        
+        return True
 
     def _translate(
         self,
@@ -282,6 +311,166 @@ class AdminCommands(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @admin.command(name="logs", description="Enable or disable bot logs")
+    @app_commands.describe(
+        action="Enable or disable logs"
+    )
+    @app_commands.choices(action=[
+        app_commands.Choice(name="Enable", value="enable"),
+        app_commands.Choice(name="Disable", value="disable"),
+        app_commands.Choice(name="Status", value="status"),
+    ])
+    @app_commands.check(is_admin)
+    async def logs_toggle(
+        self,
+        interaction: discord.Interaction,
+        action: app_commands.Choice[str]
+    ):
+        # Verifica se o MongoDB está conectado
+        if not hasattr(self.bot, 'logs_collection') or self.bot.logs_collection is None:
+            error_message = self._translate(
+                interaction,
+                "commands.admin.logs.errors.no_mongodb",
+                default="❌ MongoDB não está configurado. Não é possível salvar preferências de logs.",
+            )
+            return await interaction.response.send_message(error_message, ephemeral=True)
+        
+        action_value = action.value
+        
+        if action_value == "status":
+            # Mostra o status atual
+            try:
+                config = self.bot.logs_collection.find_one({"_id": "global"})
+                enabled = config.get("enabled", True) if config else True
+                
+                status_text = self._translate(
+                    interaction,
+                    "commands.admin.logs.status.enabled" if enabled else "commands.admin.logs.status.disabled",
+                    default="habilitados" if enabled else "desabilitados",
+                )
+                
+                embed = discord.Embed(
+                    title=self._translate(
+                        interaction,
+                        "commands.admin.logs.status.title",
+                        default="📊 Status dos Logs",
+                    ),
+                    description=self._translate(
+                        interaction,
+                        "commands.admin.logs.status.description",
+                        default=f"Os logs estão atualmente **{status_text}**.",
+                        status=status_text,
+                    ),
+                    color=0x3498db
+                )
+                
+                # Verifica se o canal de logs está configurado
+                log_channel_id = os.getenv("LOG_CHANNEL_ID", "").strip()
+                if log_channel_id and log_channel_id.isdigit():
+                    embed.add_field(
+                        name=self._translate(
+                            interaction,
+                            "commands.admin.logs.status.channel_label",
+                            default="Canal de Logs",
+                        ),
+                        value=f"<#{log_channel_id}>",
+                        inline=False
+                    )
+                else:
+                    embed.add_field(
+                        name=self._translate(
+                            interaction,
+                            "commands.admin.logs.status.channel_label",
+                            default="Canal de Logs",
+                        ),
+                        value=self._translate(
+                            interaction,
+                            "commands.admin.logs.status.no_channel",
+                            default="⚠️ Não configurado (defina LOG_CHANNEL_ID no .env)",
+                        ),
+                        inline=False
+                    )
+                
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            except Exception as exc:
+                error_message = self._translate(
+                    interaction,
+                    "commands.admin.logs.errors.status_failed",
+                    default=f"❌ Erro ao verificar status dos logs: {exc}",
+                    error=str(exc),
+                )
+                await interaction.response.send_message(error_message, ephemeral=True)
+        
+        elif action_value == "enable":
+            # Habilita os logs
+            try:
+                self.bot.logs_collection.update_one(
+                    {"_id": "global"},
+                    {"$set": {"enabled": True}},
+                    upsert=True
+                )
+                
+                embed = discord.Embed(
+                    title=self._translate(
+                        interaction,
+                        "commands.admin.logs.enable.title",
+                        default="✅ Logs Habilitados",
+                    ),
+                    description=self._translate(
+                        interaction,
+                        "commands.admin.logs.enable.description",
+                        default="Os logs do bot foram habilitados com sucesso!",
+                    ),
+                    color=0x00ff00
+                )
+                
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            except Exception as exc:
+                error_message = self._translate(
+                    interaction,
+                    "commands.admin.logs.errors.enable_failed",
+                    default=f"❌ Erro ao habilitar logs: {exc}",
+                    error=str(exc),
+                )
+                await interaction.response.send_message(error_message, ephemeral=True)
+        
+        elif action_value == "disable":
+            # Desabilita os logs
+            try:
+                self.bot.logs_collection.update_one(
+                    {"_id": "global"},
+                    {"$set": {"enabled": False}},
+                    upsert=True
+                )
+                
+                embed = discord.Embed(
+                    title=self._translate(
+                        interaction,
+                        "commands.admin.logs.disable.title",
+                        default="🔕 Logs Desabilitados",
+                    ),
+                    description=self._translate(
+                        interaction,
+                        "commands.admin.logs.disable.description",
+                        default="Os logs do bot foram desabilitados com sucesso!",
+                    ),
+                    color=0xff9900
+                )
+                
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            except Exception as exc:
+                error_message = self._translate(
+                    interaction,
+                    "commands.admin.logs.errors.disable_failed",
+                    default=f"❌ Erro ao desabilitar logs: {exc}",
+                    error=str(exc),
+                )
+                await interaction.response.send_message(error_message, ephemeral=True)
+
 
 async def setup(bot):
-    await bot.add_cog(AdminCommands(bot))
+    cog = AdminCommands(bot)
+    # Define permissões padrão - comando visível apenas para administradores
+    # Os owners do bot sempre podem usar mesmo sem a permissão
+    cog.admin.default_permissions = discord.Permissions(administrator=True)
+    await bot.add_cog(cog)

@@ -539,6 +539,18 @@ class SearchDropdown(discord.ui.Select):
             except Exception:
                 pass
 
+            # Inicializa o dicionário de requesters se não existir
+            if not hasattr(player, "_track_requesters"):
+                player._track_requesters = {}
+
+            # Define quem solicitou a música
+            track.requester = interaction.user
+            
+            # Armazena também em um dicionário personalizado
+            track_id = getattr(track, "identifier", None) or getattr(track, "encoded", None)
+            if track_id:
+                player._track_requesters[track_id] = interaction.user
+
             # Se já está tocando algo, adiciona à fila ou substitui
             if player.playing:
                 await player.queue.put_wait(track)
