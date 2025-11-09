@@ -311,6 +311,30 @@
           "url_label": "URL"
         }
       },
+      "logs": {
+        "enable": {
+          "title": "✅ Journaux activés",
+          "description": "Les journaux du bot ont été activés avec succès !"
+        },
+        "disable": {
+          "title": "🔕 Journaux désactivés",
+          "description": "Les journaux du bot ont été désactivés avec succès !"
+        },
+        "status": {
+          "title": "📊 État des journaux",
+          "description": "Les journaux sont actuellement **{status}**.",
+          "enabled": "activés",
+          "disabled": "désactivés",
+          "channel_label": "Salon de journaux",
+          "no_channel": "⚠️ Non configuré (définissez LOG_CHANNEL_ID dans le .env)"
+        },
+        "errors": {
+          "no_mongodb": "❌ MongoDB n'est pas configuré. Impossible d'enregistrer les préférences de journaux.",
+          "enable_failed": "❌ Impossible d'activer les journaux : {error}",
+          "disable_failed": "❌ Impossible de désactiver les journaux : {error}",
+          "status_failed": "❌ Impossible de vérifier l'état des journaux : {error}"
+        }
+      },
       "activity_types": {
         "playing": "En train de jouer",
         "listening": "En train d'écouter",
@@ -454,12 +478,24 @@
         "fetch_failed": {
           "title": "❌ Erreur lors de la récupération",
           "description": "J'ai trouvé la chanson mais je n'ai pas réussi à extraire les paroles."
-        }
+        },
+        "guild_only": "❌ Cette commande fonctionne uniquement dans un serveur.",
+        "feature_unavailable": "❌ Les paroles ne sont pas disponibles pour le moment. Réessayez un peu plus tard."
       },
       "embed": {
         "title": "🎵 {title}",
         "footer": "Source : {source} • Morceau actuel : {track}"
-      }
+      },
+      "searching": {
+        "title": "🎶 Recherche des paroles",
+        "description": "Recherche des paroles de **{song}**...",
+        "footer": "Cela peut prendre quelques secondes."
+      },
+      "warnings": {
+        "already_active": "⚠️ Des paroles sont déjà affichées dans ce canal."
+      },
+      "stopped": "⏹️ Synchronisation des paroles interrompue.",
+      "stop_button": "🛑 Arrêter"
     },
     "search": {
       "dropdown": {
@@ -514,6 +550,72 @@
         "preview_more": "... et encore **{remaining}** piste(s)",
         "footer": "💡 Utilisez le menu déroulant ci-dessous pour sélectionner • Expire dans 5 minutes"
       }
+    }
+  },
+  "logs": {
+    "common": {
+      "unknown": "Inconnu",
+      "member_count": "{count} membres",
+      "verification": {
+        "none": "Aucune",
+        "low": "Faible",
+        "medium": "Moyenne",
+        "high": "Élevée",
+        "highest": "Très élevée"
+      },
+      "boost": {
+        "basic": "Niveau {tier}",
+        "with_count": "Niveau {tier} ({count} boosts)"
+      }
+    },
+    "guild_join": {
+      "title": "📥 Rejoint un nouveau serveur !",
+      "fields": {
+        "name": "Nom du serveur",
+        "id": "ID du serveur",
+        "members": "Membres",
+        "owner": "Propriétaire",
+        "created_at": "Créé le",
+        "verification": "Vérification",
+        "boost": "Boost",
+        "total": "Serveurs au total"
+      },
+      "summary": "🌐 Je suis maintenant sur **{total}** serveurs !"
+    },
+    "guild_remove": {
+      "title": "📤 J'ai quitté un serveur",
+      "fields": {
+        "name": "Nom du serveur",
+        "id": "ID du serveur",
+        "members": "Membres",
+        "owner": "Propriétaire",
+        "created_at": "Créé le",
+        "verification": "Vérification",
+        "boost": "Boost",
+        "total": "Serveurs au total"
+      },
+      "summary": "🌐 Je suis maintenant sur **{total}** serveurs"
+    },
+    "music_start": {
+      "title": "🎵 Nouvelle musique lancée",
+      "fields": {
+        "music": "Musique",
+        "server": "Serveur",
+        "channel": "Salon vocal",
+        "requester": "Demandé par"
+      },
+      "unknown_requester": "Inconnu"
+    },
+    "errors": {
+      "title": "❌ Erreur : {type}",
+      "fields": {
+        "message": "Message",
+        "guild": "Serveur",
+        "details": "Détails"
+      }
+    },
+    "lavalink": {
+      "details": "Nœud : {node}"
     }
   },
   "player": {

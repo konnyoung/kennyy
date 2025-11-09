@@ -311,6 +311,30 @@
           "url_label": "URL"
         }
       },
+      "logs": {
+        "enable": {
+          "title": "✅ Logs habilitados",
+          "description": "Os logs do bot foram habilitados com sucesso!"
+        },
+        "disable": {
+          "title": "🔕 Logs desabilitados",
+          "description": "Os logs do bot foram desabilitados com sucesso!"
+        },
+        "status": {
+          "title": "📊 Status dos Logs",
+          "description": "Os logs estão atualmente **{status}**.",
+          "enabled": "habilitados",
+          "disabled": "desabilitados",
+          "channel_label": "Canal de Logs",
+          "no_channel": "⚠️ Não configurado (defina LOG_CHANNEL_ID no .env)"
+        },
+        "errors": {
+          "no_mongodb": "❌ MongoDB não está configurado. Não é possível salvar preferências de logs.",
+          "enable_failed": "❌ Erro ao habilitar logs: {error}",
+          "disable_failed": "❌ Erro ao desabilitar logs: {error}",
+          "status_failed": "❌ Erro ao verificar status dos logs: {error}"
+        }
+      },
       "activity_types": {
         "playing": "Jogando",
         "listening": "Ouvindo",
@@ -454,12 +478,24 @@
         "fetch_failed": {
           "title": "❌ Erro ao buscar letra",
           "description": "Encontrei a música mas não consegui extrair a letra."
-        }
+        },
+        "guild_only": "❌ Este comando só funciona em servidores.",
+        "feature_unavailable": "❌ As letras estão indisponíveis no momento. Tente novamente em instantes."
       },
       "embed": {
         "title": "🎵 {title}",
         "footer": "Fonte: {source} • Música atual: {track}"
-      }
+      },
+      "searching": {
+        "title": "🎶 Procurando letra",
+        "description": "Procurando a letra de **{song}**...",
+        "footer": "Isso pode demorar alguns segundos."
+      },
+      "warnings": {
+        "already_active": "⚠️ Já há letras sendo exibidas neste canal."
+      },
+      "stopped": "⏹️ Sincronização de letras interrompida.",
+      "stop_button": "🛑 Parar"
     },
     "search": {
       "dropdown": {
@@ -514,6 +550,72 @@
         "preview_more": "... e mais **{remaining}** música(s)",
         "footer": "💡 Use o dropdown abaixo para selecionar • Expira em 5 minutos"
       }
+    }
+  },
+  "logs": {
+    "common": {
+      "unknown": "Desconhecido",
+      "member_count": "{count} membros",
+      "verification": {
+        "none": "Nenhum",
+        "low": "Baixo",
+        "medium": "Médio",
+        "high": "Alto",
+        "highest": "Muito alto"
+      },
+      "boost": {
+        "basic": "Nível {tier}",
+        "with_count": "Nível {tier} ({count} boosts)"
+      }
+    },
+    "guild_join": {
+      "title": "📥 Entrei em um novo servidor!",
+      "fields": {
+        "name": "Nome do Servidor",
+        "id": "ID do Servidor",
+        "members": "Membros",
+        "owner": "Dono",
+        "created_at": "Criado em",
+        "verification": "Verificação",
+        "boost": "Boost",
+        "total": "Total de Servidores"
+      },
+      "summary": "🌐 Agora estou em **{total}** servidores!"
+    },
+    "guild_remove": {
+      "title": "📤 Saí de um servidor",
+      "fields": {
+        "name": "Nome do Servidor",
+        "id": "ID do Servidor",
+        "members": "Membros",
+        "owner": "Dono",
+        "created_at": "Criado em",
+        "verification": "Verificação",
+        "boost": "Boost",
+        "total": "Total de Servidores"
+      },
+      "summary": "🌐 Agora estou em **{total}** servidores"
+    },
+    "music_start": {
+      "title": "🎵 Nova música iniciada",
+      "fields": {
+        "music": "Música",
+        "server": "Servidor",
+        "channel": "Canal de Voz",
+        "requester": "Solicitado por"
+      },
+      "unknown_requester": "Desconhecido"
+    },
+    "errors": {
+      "title": "❌ Erro: {type}",
+      "fields": {
+        "message": "Mensagem",
+        "guild": "Servidor",
+        "details": "Detalhes"
+      }
+    },
+    "lavalink": {
+      "details": "Nó: {node}"
     }
   },
   "player": {

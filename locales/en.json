@@ -311,6 +311,30 @@
           "url_label": "URL"
         }
       },
+      "logs": {
+        "enable": {
+          "title": "✅ Logs enabled",
+          "description": "Bot logs were enabled successfully!"
+        },
+        "disable": {
+          "title": "🔕 Logs disabled",
+          "description": "Bot logs were disabled successfully!"
+        },
+        "status": {
+          "title": "📊 Log Status",
+          "description": "Logs are currently **{status}**.",
+          "enabled": "enabled",
+          "disabled": "disabled",
+          "channel_label": "Log Channel",
+          "no_channel": "⚠️ Not configured (set LOG_CHANNEL_ID in .env)"
+        },
+        "errors": {
+          "no_mongodb": "❌ MongoDB isn't configured. Unable to store log preferences.",
+          "enable_failed": "❌ Failed to enable logs: {error}",
+          "disable_failed": "❌ Failed to disable logs: {error}",
+          "status_failed": "❌ Failed to fetch log status: {error}"
+        }
+      },
       "activity_types": {
         "playing": "Playing",
         "listening": "Listening",
@@ -454,12 +478,24 @@
         "fetch_failed": {
           "title": "❌ Failed to fetch lyrics",
           "description": "Found the song but couldn't extract the lyrics."
-        }
+        },
+        "guild_only": "This command can only be used inside a server.",
+        "feature_unavailable": "Lyrics aren't available right now. Try again later."
       },
       "embed": {
         "title": "🎵 {title}",
         "footer": "Source: {source} • Current track: {track}"
-      }
+      },
+      "searching": {
+        "title": "🎶 Searching for lyrics",
+        "description": "Looking for the lyrics of **{song}**...",
+        "footer": "This may take a few seconds."
+      },
+      "warnings": {
+        "already_active": "⚠️ There are already lyrics being displayed in this channel."
+      },
+      "stopped": "⏹️ Lyrics synchronization stopped.",
+      "stop_button": "🛑 Stop"
     },
     "search": {
       "dropdown": {
@@ -514,6 +550,72 @@
         "preview_more": "... and **{remaining}** more track(s)",
         "footer": "💡 Use the dropdown below to select • Expires in 5 minutes"
       }
+    }
+  },
+  "logs": {
+    "common": {
+      "unknown": "Unknown",
+      "member_count": "{count} members",
+      "verification": {
+        "none": "None",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "highest": "Very high"
+      },
+      "boost": {
+        "basic": "Tier {tier}",
+        "with_count": "Tier {tier} ({count} boosts)"
+      }
+    },
+    "guild_join": {
+      "title": "📥 Joined a new server!",
+      "fields": {
+        "name": "Server Name",
+        "id": "Server ID",
+        "members": "Members",
+        "owner": "Owner",
+        "created_at": "Created on",
+        "verification": "Verification",
+        "boost": "Boost",
+        "total": "Total Servers"
+      },
+      "summary": "🌐 I'm now in **{total}** servers!"
+    },
+    "guild_remove": {
+      "title": "📤 Left a server",
+      "fields": {
+        "name": "Server Name",
+        "id": "Server ID",
+        "members": "Members",
+        "owner": "Owner",
+        "created_at": "Created on",
+        "verification": "Verification",
+        "boost": "Boost",
+        "total": "Total Servers"
+      },
+      "summary": "🌐 I'm now in **{total}** servers"
+    },
+    "music_start": {
+      "title": "🎵 New track started",
+      "fields": {
+        "music": "Track",
+        "server": "Server",
+        "channel": "Voice Channel",
+        "requester": "Requested by"
+      },
+      "unknown_requester": "Unknown"
+    },
+    "errors": {
+      "title": "❌ Error: {type}",
+      "fields": {
+        "message": "Message",
+        "guild": "Server",
+        "details": "Details"
+      }
+    },
+    "lavalink": {
+      "details": "Node: {node}"
     }
   },
   "player": {
