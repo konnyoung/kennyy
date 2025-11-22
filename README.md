@@ -1,4 +1,4 @@
-# Kennyy 🎶
+# Kennyy 🎶 - your Discord music bot :D
 
 <p align="center">
    <a href="https://discord.com/api/oauth2/authorize?client_id=920133124095098881&permissions=2150648832&scope=bot%20applications.commands">
@@ -152,6 +152,7 @@ Pull requests are welcome! Please accompany significant features with translatio
 - Turkish: Twixier
 
 Made with ❤️ for the Discord community. Enjoy the music!
+
 
 
 
