@@ -18,6 +18,9 @@ LANGUAGE_OPTIONS = {
     "ja": {
         "emoji": "🇯🇵",
     },
+    "tr": {
+        "emoji": "🇹🇷",
+    },
 }
 
 
@@ -37,6 +40,7 @@ class LanguageCommands(commands.Cog):
             app_commands.Choice(name="🇺🇸 English", value="en"),
             app_commands.Choice(name="🇫🇷 Français", value="fr"),
             app_commands.Choice(name="🇯🇵 日本語", value="ja"),
+            app_commands.Choice(name="🇹🇷 Türkçe", value="tr"),
         ]
     )
     async def language(
