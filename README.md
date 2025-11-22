@@ -1,4 +1,4 @@
-# Kenny Music Bot
+# Kennyy 🎶
 
 <p align="center">
    <a href="https://discord.com/api/oauth2/authorize?client_id=920133124095098881&permissions=2150648832&scope=bot%20applications.commands">
@@ -6,7 +6,7 @@
    </a>
 </p>
 
-Kenny is a multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback and a polished slash-command experience with advanced features and extensive language support.
+Kennyy is a 'opun sosu' multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback and a polished slash-command experience with advanced features and extensive language support.
 
 ## Feature Highlights
 - **Seamless music playback** with queue controls, filters, search, and Lavalink-powered lyrics (including live sync when timed data is available).
@@ -152,5 +152,6 @@ Pull requests are welcome! Please accompany significant features with translatio
 - Turkish: Twixier
 
 Made with ❤️ for the Discord community. Enjoy the music!
+
 
 
