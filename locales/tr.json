@@ -1,0 +1,643 @@
+{
+  "languages": {
+    "pt": {
+      "label": "Portekizce (Brezilya)"
+    },
+    "pt-pt": {
+      "label": "Portekizce (Portekiz)"
+    },
+    "fr": {
+      "label": "Fransızca"
+    },
+    "en": {
+      "label": "İngilizce"
+    },
+    "ja": {
+      "label": "Japonca"
+    },
+    "tr": {
+      "label": "Türkçe"
+    }
+  },
+  "commands": {
+    "common": {
+      "embeds": {
+        "error_title": "❌ Hata"
+      },
+      "errors": {
+        "no_track": "❌ Herhangi bir parça çalmıyor.",
+        "no_track_full": "Şu anda herhangi bir parça çalmıyor.",
+        "bot_not_connected": "❌ Bot bağlanamadı.",
+        "bot_not_connected_full": "Bot ses kanalına bağlanamıyor.",
+        "user_not_in_voice": "Bir ses kanalına girmeniz lazım!"
+      },
+      "labels": {
+        "artist": "Sanatçı",
+        "duration": "Uzunluk",
+        "position": "Numara",
+        "title": "Başlık",
+        "unknown_author": "Bilinmeyen",
+        "unknown_track": "Bilinmeyen parça"
+      }
+    },
+    "language": {
+      "errors": {
+        "guild_only": "Bu komut bir sunucu içinde kullanılmalıdır.",
+        "feature_unavailable": "Dil değiştirme şu anda kullanılamıyor.",
+        "db_unavailable": "Ayarlarınızı kaydetmek için database'e erişemiyorum",
+        "unsupported": "Bu dil daha desteklenmiyor.",
+        "no_permission": "Sunucu dilini sadece yöneticiler değiştirebilir."
+      },
+      "success": {
+        "already_current": {
+          "title": "Hiçbir şey değişmedi!",
+          "description": "Hâlihazırda {language_label} olarak konuşuyorum."
+        },
+        "updated": {
+          "title": "Dil Güncellendi!",
+          "description": "Bundan sonra burda {language_label} konuşacağım!",
+          "current_language_label": "Seçili Dil",
+          "footer": "Değiştirmek istediğiniz zaman /language yazarak dili değiştirebilirsiniz!"
+        },
+        "save_failed": "Şu anda ayarları kaydedemiyorum. Lütfen birazdan tekrar deneyin."
+      }
+    },
+    "play": {
+      "volume": {
+        "decrease": {
+          "title": "🔉 Sesi Kıs"
+        },
+        "increase": {
+          "title": "🔊 Sesi Aç"
+        },
+        "change": {
+          "description": "**{old}%** olan ses ayarı **{new}%** olarak değiştirildi"
+        },
+        "warning": {
+          "title": "⚠️ Uyarı",
+          "description": "Sesin 100%'ü aşması zararlara sebep olabilir!"
+        },
+        "command": {
+          "invalid_title": "❌ Geçersiz Ses Değeri",
+          "invalid_description": "Ses **0%** ile **150%** arasında olmalıdır.",
+          "title": "🔊 Ses değiştirildi",
+          "description": "**{old}%** olan ses seviyesi **{new}%** olarak güncellendi",
+          "level_label": "Ses Seviyesi",
+          "level_value": "`{level}%` {bar}",
+          "silenced_title": "🔇 Susturulu",
+          "silenced_description": "🔊 buttonlarını kullanarak ya da /volume yazarak tekrardan ayarlayabilirsin."
+        }
+      },
+      "previous": {
+        "restarted": "⏮️ Parça yeniden başlatıldı!",
+        "none": "⏮️ There's no previous track!"
+      },
+      "toggle": {
+        "resumed": "▶️ Oynatma devam ediyor!",
+        "paused": "⏸️ Oynatma durduruldu!"
+      },
+      "pause": {
+        "resumed_title": "▶️ Oynatma Devam Ediyor.",
+        "resumed_description": "**{title}** çalıyor.",
+        "paused_title": "⏸️ Oynatma Durduruldu.",
+        "paused_description": "**{title}** durduruldu."
+      },
+      "stop": {
+        "success": "⏹️ Oynatma durduruldu ve sıra temizlendi!",
+        "embed_title": "⏹️ Oynatma Durduruldu!",
+        "embed_description": "Oynatma durduruldu ve sıra temizlendi.",
+        "footer": "/play yazarak tekrardan müzik çalabilirim!"
+      },
+      "skip": {
+        "success": "⏭️ Parça atlandı!",
+        "embed_title": "⏭️ Parça Atlandı",
+        "embed_description": "**{track}** atlandı.",
+        "next_label": "⏭️ Sonraki parça",
+        "next_value": "**{title}**\n{author}"
+      },
+      "shuffle": {
+        "empty": "❌ Sırada karıştırmak için bir parça yok!",
+        "success": "🔀 Sıra karıştırıldı! ({count} parça)"
+      },
+      "loop": {
+        "button": {
+          "off": "Döngü: Kapalı",
+          "track": "Döngü: Parça",
+          "queue": "Döngü: Sıra"
+        },
+        "responses": {
+          "off": "🔁 Döngü devre dışı.",
+          "track": "🔂 Parça döngüsü aktif.",
+          "queue": "🔁 Sıra döngüsü aktif."
+        }
+      },
+      "autocomplete": {
+        "prompt": "Aramak için en az 2 karakter yazın...",
+        "url_detected": "URL algılandı: {value}...",
+        "no_results": "Sonuç bulunamadı",
+        "error_choice": "Arama hatası: {value}",
+        "unknown_title": "Bilinmeyen başlık",
+        "timeout": "⏳ Arama çok uzun sürdü... Yazışmaya devam edin"
+      },
+      "errors": {
+        "user_not_in_voice": "Ses kanalında olmalısınız!",
+  "same_voice_channel": "Kontrolleri kullanmak için bot ile aynı ses kanalında olmalısınız!",
+        "lavalink_validation": "Lavalink bağlantısı doğrulanamadı: {error}",
+        "lavalink_unavailable": {
+          "title": "❌ Lavalink kullanılamıyor",
+          "description": "Ses sunucusu şu anda yanıt vermiyor. Birazdan tekrar deneyin."
+        },
+        "connect_voice": "Ses kanalına bağlanılamadı: {error}",
+        "search_failure": "Arama sırasında bir şeyler yanlış gitti: {error}",
+        "not_found": {
+          "title": "❌ Bulunamadı",
+          "description": "Yazdığınız ile bir sonuç bulamadım."
+        },
+        "playlist_start": "Oynatma listesi başlatılamıyor: {error}",
+        "play_start": "Oynatma başlatılamıyor: {error}",
+        "process_failure": "Parça işlenirken bir sorun oluştu: {error}"
+      },
+      "playlist": {
+        "added": {
+          "title": "📋Oynatma listesi eklendi",
+          "description": "**{name}**\n{count} parça sıraya eklendi.",
+          "stats_name": "📊 İstatistikler",
+          "stats_value": "Toplam sıra: {queue_count}"
+        }
+      },
+      "start": {
+        "playing_now": "▶️ Şu Anda Oynatılıyor: **{title}**"
+      },
+      "now_playing": {
+        "title": "🎵 Şu Anda Oynatılıyor",
+        "description": "**{title}**",
+        "volume_label": "Ses",
+        "queue_label": "Sıra",
+        "status_label": "Durum",
+        "requested_by": "👤 İsteyen kişi:",
+        "queue_value": "{count} parça",
+        "status": {
+          "playing": "🔄 Oynatılıyor"
+        },
+        "footer": "Oynatmayı kontrol etmek için buttonları kullanın. • Ses için 🔉🔊"
+      },
+      "queue": {
+        "added": {
+          "title": "➕ Sıraya Eklendi",
+          "description": "**{title}**",
+          "position_label": "Sıra Numarası",
+          "eta_label": "⏱️ Geçen Süre",
+          "footer": "Sıradaki toplam parça: {count}"
+        }
+      },
+      "seek": {
+        "errors": {
+          "no_track": "❌ Hiçbir şey çalmıyorum.",
+          "format": "Geçersiz süre formatı.",
+          "out_of_range": "❌ Süre minimum 0 ile {max_seconds} arasında olmalıdır.",
+          "generic": "❌ Atlanırken bir sorun oluştu: {error}"
+        },
+        "success": "⏩ {timestamp} atlandı!"
+      }
+  },
+    "queue": {
+      "embed": {
+        "title": "Oynatma Sırası",
+        "empty_description": "Sırada herhangi bir parça yok.",
+        "status": {
+          "playing": "Oynatılıyor",
+          "paused": "Durduruldu"
+        },
+        "now_playing": "▶ Çalınıyor",
+        "status_label": "Durum",
+        "progress_label": "İlerleme",
+        "queue": {
+          "more": "... ve {remaining} parça kaldı",
+          "item": "`{index}.` {title} `({duration})`"
+        },
+        "queue_label": "Sonraki",
+        "total_label": "Toplam Parçalar",
+        "total_value": "{count}",
+        "queue_time_label": "Sıra Uzunluğu",
+        "remaining_time_label": "Kalan Süre",
+        "page_label": "Sayfa",
+        "empty_queue": "Sırada bir parça yok.",
+        "empty_total_value": "0",
+        "empty_queue_time": "00:00",
+        "footer": "Canlı Güncellenir • /skipto komudunu kullanarak istediğiniz parçaya gidebilirsiniz."
+      },
+      "labels": {
+        "current_track": "Şu Anki Parça"
+      },
+      "skipto": {
+        "errors": {
+          "empty": "Sırada atlanılacak bir parça yok.",
+          "invalid_title": "Geçersiz Numara",
+          "invalid_description": "1 ile {max_position} arasında bir sayı seçin.",
+          "generic": "Bu numaraya geçemiyorum: {error}"
+        },
+        "success": {
+          "title": "Parçaya atlanıyor",
+          "description": "⏭️ **{title}** parçaya atlandı."
+        }
+      },
+      "clear": {
+        "errors": {
+          "empty": "Temizlenecek parça yok."
+        },
+        "success": {
+          "title": "Sıra Temizlendi",
+          "removed_label": "Parçalar Kaldırıldı",
+          "removed_value": "{count}",
+          "current_value": "Hâlâ Çalınıyor",
+          "title_value": "{title}"
+        }
+      },
+      "shuffle": {
+        "errors": {
+          "empty": "Sırada karıştırılacak yeteri sayıda parça yok."
+        },
+        "success": {
+          "title": "Sıra Karıştırıldı",
+          "shuffled_label": "Parçalar Karıştırıldı",
+          "shuffled_value": "{count}",
+          "next_track_label": "Sonraki Parça",
+          "next_track_value": "{title}",
+          "status_label": "Durum",
+          "status_value": "Sıra Güncellendi"
+        }
+      },
+      "remove": {
+        "errors": {
+          "empty": "Sırada kaldıralacak parça yok.",
+          "invalid_title": "Geçersiz Numara",
+          "invalid_description": "1 ile {max_position} arasında bir sayı kullanın."
+        },
+        "success": {
+          "title": "Parça Kaldırıldı",
+          "track_label": "Parça",
+          "track_value": "{title}",
+          "position_value": "{position}",
+          "remaining_label": "Kalan Sıra",
+          "remaining_value": "{count} parça"
+        }
+      }
+    },
+    "admin": {
+      "errors": {
+        "no_permission": "❌ Bu komudu kullanmak için yeterli izniniz bulunmamaktır."
+      },
+      "status": {
+        "labels": {
+          "online": "Çevrim İçi",
+          "dnd": "Rahatsız Etme",
+          "idle": "Boşta",
+          "invisible": "Görünmez"
+        }
+      },
+      "setstatus": {
+        "success": {
+          "title": "✅ Durum Güncellendi",
+          "description": "Yeni durum: **{status_name}**"
+        }
+      },
+      "setpresence": {
+        "errors": {
+          "message_required": "❌ Durumu ayarlamak için lütfen bir mesaj girin.",
+          "streaming_message_required": "❌ Yayında seçeneğini ayarlamak için lütfen bir mesaj girin.",
+          "streaming_url": "❌ 'Yayında' seçeneği için geçerli bir URL girin (Twitch/YouTube)."
+        },
+        "success": {
+          "title": "✅ Aktivite Güncellendi",
+          "cleared": "Aktivite sıfırlandı!",
+          "updated": "Yeni Aktivite: **{activity_label}** — {message}",
+          "url_label": "URL"
+        }
+      },
+      "logs": {
+        "enable": {
+          "title": "✅ Loglar Açıldı!",
+          "description": "Bot logları başarıyla açıldı!"
+        },
+        "disable": {
+          "title": "🔕 Loglar Kapatıldı",
+          "description": "Bot logları başarıyla kapatıldı!"
+        },
+        "status": {
+          "title": "📊 Log Durumu",
+          "description": "Loglar şu anda **{status}**.",
+          "enabled": "aktif",
+          "disabled": "kapalı",
+          "channel_label": "Log Kanalı",
+          "no_channel": "⚠️ Seçilmedi (.env dosyasında LOG_CHANNEL_ID'yi değiştirin)"
+        },
+        "errors": {
+          "no_mongodb": "❌ MongoDB ayarlanmadı. Unable to store log preferences.",
+          "enable_failed": "❌ Loglar açılamadı: {error}",
+          "disable_failed": "❌ Loglar kapatılamadı: {error}",
+          "status_failed": "❌ Logları almayı başaramadı.: {error}"
+        }
+      },
+      "activity_types": {
+        "playing": "Oynuyor",
+        "listening": "Dinliyor",
+        "watching": "İzliyor",
+        "competing": "Competing",
+        "streaming": "Yayında"
+      }
+    },
+    "clearqueue": {
+      "empty": {
+        "title": "Sıra Boş",
+        "description": "Sırada herhangi bir parça bulunmadığından temizlenemez.",
+        "current_label": "🎵 Şu anki parça",
+        "current_value": "**{title}** hâlâ çalınıyor.\n(Durdurmak için /stop)"
+      },
+      "success": {
+        "title": "🗑️ Sıra Temizlendi",
+        "removed_label": "Temizlenen parçalar",
+        "removed_value": "{count}",
+        "status_label": "Sıra Durumu",
+        "status_value": "✅ Temizlendi",
+        "current_label": "Şu anki Parça",
+        "current_value": "Hâlâ Oynatılıyor",
+        "now_playing_label": "🎵 Oynatılıyor",
+        "now_playing_value": "**{title}**\nTarafından: {author}",
+        "footer": "Sıraya yeni parçalar eklemek için /play komudunu kullanın."
+      }
+    },
+    "filter": {
+      "buttons": {
+        "bass_boost": {
+          "label": "Bass Boost",
+          "activated": "🎵 Bass Boost Aktif! (orta seviye)!",
+          "deactivated": "🎵 Bass Boost Kapatıldı!",
+          "error": "❌ Bass Boost uygulanırken bir sorun oluştu: {error}"
+        },
+        "nightcore": {
+          "label": "Nightcore",
+          "activated": "⚡ Nightcore Aktif!",
+          "deactivated": "⚡ Nightcore Kapatıldı!",
+          "error": "❌ Nightcore uygulanırken bir sorun oluştu: {error}"
+        },
+        "karaoke": {
+          "label": "Karaoke",
+          "activated": "🎤 Karaoke Aktif!",
+          "deactivated": "🎤 Karaoke Kapatıldı!",
+          "error": "❌ Karaoke açılırken bir sorun oluştu: {error}"
+        },
+        "rotation": {
+          "label": "8D Ses",
+          "activated": "🌀 8D Ses Açıldı!",
+          "deactivated": "🌀 8D Ses Kapatıldı!",
+          "error": "❌ 8D Ses açılırken bir sorun oluştu: {error}"
+        },
+        "reset": {
+          "label": "Sıfırla",
+          "success": "🔄 Tüm filtreler sıfırlandı!",
+          "error": "❌ Filtreler sıfırlanırken bir hata ile karşılaşıldı: {error}"
+        }
+      },
+      "filters": {
+        "embed": {
+          "title": "🎛️ Ses Filtreleri Paneli",
+          "description": "Parçaya uygulamak istediğiniz filtreleri seçin:",
+          "now_playing_label": "🎵 Şu Anda Çalınıyor",
+          "now_playing_value": "**{title}**\nTarafından: {author}",
+          "available_label": "🎛️ Kullanılabilir Filtreler",
+          "available_value": "🎵 **Bass Boost** - Bass'ı artırır\n⚡ **Nightcore** - Hız + ton\n🎤 **Karaoke** - Vokalleri kaldırır\n🌀 **8D Ses** - Sirküle bir ses\n🔄 **Reset** - Hepsini kaldırır",
+          "howto_label": "💡 Nasıl kullanılır?",
+          "howto_value": "Uygulamak/Kaldırmak için buttonları kullanın. Aktif filtreler mavi olarak gösterilir.",
+          "footer": "⚠️ Filtreler uygulandığında bir gecikme oluşabilir!"
+        }
+      },
+      "bassboost": {
+        "off": {
+          "title": "🎵 Bass Boost Kapalı",
+          "description": "Bass boost kaldırıldı."
+        },
+        "on": {
+          "title": "🎵 Bass Boost Uygulandı",
+          "description": "Bass boost **{level}** seviyesine ayarlandı",
+          "settings_label": "🔧 Teknik Ayarlar"
+        },
+        "errors": {
+          "invalid_title": "❌ Geçersiz Seviye",
+          "invalid_description": "'{level}' mevcut değil. Lütfen bunlardan birini kullanın: high, medium, low ya da off",
+          "generic": "Bass boost uygulanırken bir hata meydana geldi: {error}"
+        }
+      },
+      "reset": {
+        "title": "🔄 Filtre Sıfırlama",
+        "description": "Tüm ses filtreleri kaldırıldı.",
+        "removed_label": "✅ Filtreler Kaldırıldı",
+        "removed_value": "🎵 Bass Boost\n⚡ Nightcore\n🎤 Karaoke\n🌀 8D Ses\nVe diğer aktif filtreler...",
+        "now_playing_label": "🎵 Şu anki parça",
+        "now_playing_value": "**{title}**\nNormal sese geri dönüldü",
+        "error": "Filtreleri sıfırlarken bir hata meydana geldi: {error}"
+      }
+    },
+    "help": {
+      "embed": {
+        "title": "📖 Mevcut Komutlar",
+        "no_description": "Açıklama yok",
+        "footer": "Toplam komut sayısı: {count}"
+      }
+    },
+    "ping": {
+      "embed": {
+        "title": "🏓 Ping",
+        "footer": "Ölçüler ayarlanıyor..."
+      },
+      "fields": {
+        "discord": {
+          "name": "Discord (Gateway)",
+          "value": "{emoji} `{latency} ms`"
+        },
+        "lavalink": {
+          "label": "{identifier} ({scheme}://{host}:{port})",
+          "value": "{emoji} `{latency} ms` • endpoint: `{endpoint}`"
+        },
+        "lavalink_empty": {
+          "name": "Lavalink",
+          "value": "{emoji} ayar bulunamadı."
+        },
+        "cloudflare": {
+          "name": "1.1.1.1",
+          "value": "{emoji} `{latency} ms` • TCP 443"
+        }
+      }
+    },
+    "lyrics": {
+      "errors": {
+        "no_track": {
+          "title": "❌ Herhangi bir müzik çalınmıyor",
+          "description": "Şu anda herhangi bir müzik çalınmıyor. /play yazarak bir ilk olabilirsiniz!"
+        },
+        "not_found": {
+          "title": "❌ Bulunamadı",
+          "description": "Sözleri bulunamadı: **{query}**"
+        },
+        "fetch_failed": {
+          "title": "❌ Sözler ayarlanamadı",
+          "description": "Bir şarkı buldum ama sözleri uyuşmuyor."
+        },
+        "guild_only": "Bu komut sadece sunucu içinde kullanılabilir.",
+        "feature_unavailable": "Sözler şu anda mevcut değil daha sonra tekrar deneyin. Daha sonra tekrar deneyin."
+      },
+      "embed": {
+        "title": "🎵 {title}",
+        "footer": "Kaynak: {source} • Şu anki parça: {track}"
+      },
+      "searching": {
+        "title": "🎶 Sözler Aranıyor",
+        "description": "**{song}** adlı şarkının sözleri aranıyor...",
+        "footer": "Bu birkaç saniye sürebilir."
+      },
+      "warnings": {
+        "already_active": "⚠️ Hâlihazırda sözler kanalda görüntüleniyor."
+      },
+      "stopped": "⏹️ Söz senkronizasyonu durduruldu.",
+      "stop_button": "🛑 Durdur"
+    },
+    "search": {
+      "dropdown": {
+        "option_description": "👤 {author} • ⏱️ {duration}",
+        "placeholder": "🎵 Oynatmak için bir parça seçin...",
+        "errors": {
+          "only_requester": "❌ Sadece bu komudu kullanan kişi seçebilir!",
+          "user_not_in_voice": "❌ Müzik çalmak için bir ses kanalında olmalısınız!",
+          "connect_voice": "❌ Ses kanalına bağlanma ile ilgili bir sorun oluştu: {error}",
+          "play": "❌ Parçanın çalınmasıyla ilgili bir sorun oluştu: {error}"
+        },
+        "footer": {
+          "queue": "🔍 Aramadan seçildi • Kontrol etmek için buttonları kullanın",
+          "play": "🔍 Aramadan seçildi • Kontrol etmek için buttonları kullanın"
+        }
+      },
+      "view": {
+        "cancel": {
+          "label": "❌ İptal",
+          "errors": {
+            "only_requester": "❌ Sadece komudu kullanan kişi iptal edebilir!"
+          },
+          "embed": {
+            "title": "🚫 Arama İptal Edildi",
+            "description": "**{query}** araması iptal edildi."
+          }
+        }
+      },
+      "errors": {
+        "user_not_in_voice": "Bu komudu kullanmak için bir ses kanalında olmalısınız!",
+        "no_results": {
+          "title": "❌ Sonuç yok",
+          "description": "Aramanızla herhangi bir sonuç bulunamadı: **{query}**",
+          "tips_label": "💡 İpuçları",
+          "tips_value": "• Daha spesifik şeyler yazın\n• Telaffuzu kontrol edin\n• Sanatçı adı + parça adını deneyin"
+        },
+        "generic": "Arama ile ilgili bir hata meydana geldi: {error}"
+      },
+      "playlist": {
+        "title": "🔍 Arama Sonuçları - Oynatma Listesi",
+        "description": "**{name}**\nOynatma listesinden bir parça seç:",
+        "info_label": "📋 Bilgi",
+        "info_value": "Toplam parça: {total}\nGösterilen: {showing}"
+      },
+      "results": {
+        "title": "🔍 Arama Sonuçları",
+        "description": "**{query}** ile ilgili toplamda **{count}** sonuç bulundu. \nParça seçin:",
+        "howto_label": "💡 Nasıl kullanılır?",
+        "howto_value": "İstediğiniz parçayı aşağıdan seçiniz.",
+        "preview_label": "🎵 Sonuç Önizlemesi",
+        "preview_item": "`{index}.` **{title}**\n👤 {author} • ⏱️ {duration}",
+        "preview_more": "... ve {remaining} parça kaldı",
+        "footer": "💡 İçerik menüsünü kullanarak seçebilirsin • 5 dakikaya süresi dolacak"
+      }
+    }
+  },
+  "logs": {
+    "common": {
+      "unknown": "Bilinmeyen",
+      "member_count": "{count} üye",
+      "verification": {
+        "none": "Yok",
+        "low": "Düşük",
+        "medium": "Orta",
+        "high": "Yüksek",
+        "highest": "Çok yüksek"
+      },
+      "boost": {
+        "basic": "Seviye {tier}",
+        "with_count": "Seviye {tier} ({count} boost)"
+      }
+    },
+    "guild_join": {
+      "title": "📥 Sunucuya girdi!",
+      "fields": {
+        "name": "Sunucu Adı",
+        "id": "Sunucu ID'si",
+        "members": "Üyeler",
+        "owner": "Sahibi",
+        "created_at": "Oluşturulma Tarihi",
+        "verification": "Doğrulama",
+        "boost": "Boost",
+        "total": "Tüm Sunucular"
+      },
+      "summary": "🌐 **{total}** tane sunucuda bulunmaktayım!"
+    },
+    "guild_remove": {
+      "title": "📤 Sunucudan çıktı!",
+      "fields": {
+        "name": "Sunucu Adı",
+        "id": "Sunucu ID'si",
+        "members": "Üyeler",
+        "owner": "Sahibi",
+        "created_at": "Oluşturulma Tarihi",
+        "verification": "Doğrulama",
+        "boost": "Boost",
+        "total": "Tüm Sunucular"
+      },
+      "summary": "🌐 **{total}** tane sunucuda bulunmaktayım!"
+    },
+    "music_start": {
+      "title": "🎵 Yeni Bir Parça Çalınıyor",
+      "fields": {
+        "music": "Parça",
+        "server": "Sunucu",
+        "channel": "Ses Kanalı",
+        "requester": "İsteyen kişi:"
+      },
+      "unknown_requester": "Bilinmeyen"
+    },
+    "errors": {
+      "title": "❌ Hata: {type}",
+      "fields": {
+        "message": "Mesaj",
+        "guild": "Sunucu",
+        "details": "Detaylar"
+      }
+    },
+    "lavalink": {
+      "details": "Node: {node}"
+    }
+  },
+  "player": {
+    "queue_finished": {
+      "title": "Sıra Bitti!",
+      "description": "Şu anlık işim bitti ama ne zaman istersen tekrar çağırabilirsin!"
+    },
+    "track_failed": {
+      "title": "❌ Oynatılamadı!",
+      "description": "**{track}** adlı parçayı çalamıyorum.\nSebep: {reason}",
+      "fallback_reason": "Bilinmeyen sebep (Tamamen ya da bölgesel olarak engellenmiş olabilir.).",
+      "footer": "Bu parçayı atlayıp devam ediyorum.",
+      "unknown_track": "Bilinmeyen parça",
+      "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**"
+    },
+    "lonely": {
+      "pause": "{call} içinde yalnız kaldım. Birisi dönene kadar 2 dakika boyunca kuyruğu duraklatıyorum. Aksi takdirde bağlantıyı keseceğim!",
+      "resume": "Birisi {call} kanalına katıldı! Oynatmaya devam ediyorum.",
+      "disconnect": "Kimse {call} kanalına geri dönmedi. Şimdi bağlantıyı kesiyorum."
+    }
+  }
+}
