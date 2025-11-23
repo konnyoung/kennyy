@@ -113,7 +113,7 @@ Kennyy is a 'opun sosu' multilingual Discord music bot built with `discord.py`, 
 - Autocomplete and playback functions automatically promote to the next available node.
 
 ## Live Lyrics
-- The `/lyrics` command now requests lyrics exclusively from the Lavalink LavaLyrics plugin and renders them in sync when timestamps are present.
+- The `/lyrics` command now requests lyrics exclusively from the LRCLIB API and renders them in sync when timestamps are present.
 - For the most stable experience keep Spotify and YouTube lyric providers enabled in `application.yml` under `plugins.lavasrc.lyrics-sources`.
 - Optional providers (Deezer, Yandex, LRCLib, etc.) can supplement coverage; configure their required tokens or cookies before enabling them.
 - The bot highlights the current line in the embed while the track is playing and reverts to the full lyrics once playback stops or the task finishes.
@@ -152,6 +152,7 @@ Pull requests are welcome! Please accompany significant features with translatio
 - Turkish: Twixier
 
 Made with ❤️ for the Discord community. Enjoy the music!
+
 
 
 
