@@ -9,7 +9,7 @@
 Kennyy is a 'opun sosu' multilingual Discord music bot built with `discord.py`, Wavelink, and Lavalink. It delivers reliable playback and a polished slash-command experience with advanced features and extensive language support.
 
 ## Feature Highlights
-- **Seamless music playback** with queue controls, filters, search, and Lavalink-powered lyrics (including live sync when timed data is available).
+- **Seamless music playback** with queue controls, filters, search, and LRCLIB-powered lyrics (including live sync when timed data is available).
 - **Autocomplete search** with aggressive timeouts to avoid Discord "Unknown interaction" errors.
 - **Automatic channel-status** presence updates, lonely-listener auto-pause, and configurable loop/shuffle modes.
 - **Persistent guild preferences** for language and bot presence stored in MongoDB.
@@ -104,7 +104,7 @@ Kennyy is a 'opun sosu' multilingual Discord music bot built with `discord.py`, 
   - `guild_languages` — one document per guild storing language preference.
   - `bot_presence` — single document storing status/activity payload.
   - `logs_collection` — global log configuration (enabled/disabled state).
-- The bot validates the URI at startup with a `ping` and falls back to Portuguese messages if the connection fails.
+- The bot validates the  at startup with a `ping` and falls back to default messages if the connection fails.
 - All guild-specific settings (language) and global settings (presence, logs) are persisted in MongoDB.
 
 ## Lavalink Failover
@@ -152,6 +152,7 @@ Pull requests are welcome! Please accompany significant features with translatio
 - Turkish: Twixier
 
 Made with ❤️ for the Discord community. Enjoy the music!
+
 
 
 
