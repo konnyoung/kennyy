@@ -25,6 +25,7 @@ class MusicControlView(discord.ui.View):
             elif getattr(player, "queue", None):
                 initial_mode = player.queue.mode
         self._apply_loop_button_state(initial_mode)
+        self._update_play_pause_button(player)
 
     def _translate(
         self,
@@ -81,6 +82,20 @@ class MusicControlView(discord.ui.View):
 
         button.label = label
         button.emoji = "🔁"
+
+    def _update_play_pause_button(self, player: wavelink.Player | None) -> None:
+        """Alterna o emoji do botão play/pause conforme o estado atual."""
+        button: discord.ui.Button | None = None
+        for child in self.children:
+            if isinstance(child, discord.ui.Button) and child.custom_id == "search_play_pause":
+                button = child
+                break
+
+        if button is None:
+            return
+
+        is_paused = bool(getattr(player, "paused", False))
+        button.emoji = "▶️" if is_paused else "⏸️"
 
     async def _send_ephemeral(self, interaction: discord.Interaction, message: str | None) -> None:
         if not message:
@@ -175,17 +190,14 @@ class MusicControlView(discord.ui.View):
             self._guild_id = interaction.guild.id
         self._apply_loop_button_state(new_mode)
 
-        message = self._translate(
-            interaction,
-            response_key,
-            default=response_default,
-        )
-
-        await self._send_ephemeral(interaction, message or response_default)
-
         try:
-            await interaction.message.edit(view=self)
-        except Exception:
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(view=self)
+            else:
+                await interaction.edit_original_response(view=self)
+        except discord.NotFound:
+            pass
+        except discord.HTTPException:
             pass
 
     @discord.ui.button(emoji="📜", style=discord.ButtonStyle.secondary, custom_id="search_lyrics", row=1)
@@ -286,24 +298,29 @@ class MusicControlView(discord.ui.View):
 
         if player.paused:
             await player.pause(False)
-            await self._send_ephemeral(
-                interaction,
-                self._translate(
-                    interaction,
-                    "commands.play.toggle.resumed",
-                    default="▶️ Reprodução retomada!",
-                ),
-            )
         else:
             await player.pause(True)
-            await self._send_ephemeral(
-                interaction,
-                self._translate(
-                    interaction,
-                    "commands.play.toggle.paused",
-                    default="⏸️ Reprodução pausada!",
-                ),
-            )
+
+        self._update_play_pause_button(player)
+
+        try:
+            embed_message = getattr(player, "current_embed_message", None)
+            new_embed = None
+            current_track = getattr(player, "current", None)
+            build_embed = getattr(self.bot, "_build_now_playing_embed", None)
+            if embed_message and current_track and callable(build_embed):
+                new_embed = build_embed(player, current_track)
+
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(view=self, embed=new_embed)
+            elif embed_message:
+                await embed_message.edit(view=self, embed=new_embed)
+            else:
+                await interaction.edit_original_response(view=self)
+        except discord.NotFound:
+            pass
+        except discord.HTTPException:
+            pass
 
     @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, custom_id="search_stop", row=0)
     async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):

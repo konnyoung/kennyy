@@ -22,6 +22,7 @@ class MusicControlView(discord.ui.View):
         if resolved_guild_id is None and player and getattr(player, "guild", None):
             resolved_guild_id = player.guild.id
         self._guild_id = resolved_guild_id
+        self._volume_reset_tasks: dict[str, asyncio.Task] = {}
 
         initial_mode = None
         if player:
@@ -30,6 +31,7 @@ class MusicControlView(discord.ui.View):
             elif getattr(player, "queue", None):
                 initial_mode = player.queue.mode
         self._apply_loop_button_state(initial_mode)
+        self._update_play_pause_button(player)
 
     def _translate(self, interaction: discord.Interaction, key: str, **kwargs) -> str:
         translator = getattr(self.bot, "translate", None)
@@ -74,6 +76,72 @@ class MusicControlView(discord.ui.View):
 
         button.label = label
         button.emoji = "🔁"
+
+    def _update_play_pause_button(self, player: wavelink.Player | None) -> None:
+        """Alterna o emoji do botão play/pause conforme o estado atual."""
+        button: discord.ui.Button | None = None
+        for child in self.children:
+            if isinstance(child, discord.ui.Button) and child.custom_id == "play_pause":
+                button = child
+                break
+
+        if button is None:
+            return
+
+        is_paused = bool(getattr(player, "paused", False))
+        button.emoji = "▶️" if is_paused else "⏸️"
+
+    def _cancel_volume_reset(self, key: str) -> None:
+        task = self._volume_reset_tasks.pop(key, None)
+        if task and not task.done():
+            task.cancel()
+
+    def _schedule_volume_reset(
+        self,
+        key: str,
+        button: discord.ui.Button,
+        message: discord.Message | None,
+    ) -> None:
+        self._cancel_volume_reset(key)
+
+        async def _reset():
+            try:
+                await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                return
+
+            button.label = None
+            if message:
+                try:
+                    await message.edit(view=self)
+                except Exception:
+                    pass
+
+        task = asyncio.create_task(_reset())
+        self._volume_reset_tasks[key] = task
+
+    async def _show_volume_feedback(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+        new_volume: int,
+    ) -> None:
+        message = interaction.message
+        button.label = f"{new_volume}%"
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(view=self)
+            elif message:
+                await message.edit(view=self)
+        except discord.NotFound:
+            return
+        except discord.HTTPException:
+            return
+
+        custom_id = getattr(button, "custom_id", None)
+        if custom_id:
+            self._schedule_volume_reset(custom_id, button, message)
 
     async def _send_ephemeral(
         self,
@@ -166,17 +234,7 @@ class MusicControlView(discord.ui.View):
         current_volume = player.volume
         new_volume = max(current_volume - 10, 0)  # Diminui 10%, mínimo 0%
         await player.set_volume(new_volume)
-
-        title = self._translate(interaction, "commands.play.volume.decrease.title")
-        description = self._translate(
-            interaction,
-            "commands.play.volume.change.description",
-            old=current_volume,
-            new=new_volume,
-        )
-
-        embed = discord.Embed(title=title, description=description, color=0x0099ff)
-        await self._send_ephemeral(interaction, embed=embed)
+        await self._show_volume_feedback(interaction, button, new_volume)
 
     @discord.ui.button(emoji="🔊", style=discord.ButtonStyle.secondary, custom_id="volume_up")
     async def volume_up_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -194,26 +252,7 @@ class MusicControlView(discord.ui.View):
         current_volume = player.volume
         new_volume = min(current_volume + 10, 150)  # Aumenta 10%, máximo 150%
         await player.set_volume(new_volume)
-
-        title = self._translate(interaction, "commands.play.volume.increase.title")
-        description = self._translate(
-            interaction,
-            "commands.play.volume.change.description",
-            old=current_volume,
-            new=new_volume,
-        )
-
-        embed = discord.Embed(title=title, description=description, color=0x0099ff)
-
-        if new_volume > 100:
-            warning_title = self._translate(interaction, "commands.play.volume.warning.title")
-            warning_description = self._translate(
-                interaction,
-                "commands.play.volume.warning.description",
-            )
-            embed.add_field(name=warning_title, value=warning_description, inline=False)
-
-        await self._send_ephemeral(interaction, embed=embed)
+        await self._show_volume_feedback(interaction, button, new_volume)
 
     @discord.ui.button(emoji="⏮️", style=discord.ButtonStyle.secondary, custom_id="previous")
     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -252,12 +291,30 @@ class MusicControlView(discord.ui.View):
 
         if player.paused:
             await player.pause(False)
-            message = self._translate(interaction, "commands.play.toggle.resumed")
-            await self._send_ephemeral(interaction, message)
         else:
             await player.pause(True)
-            message = self._translate(interaction, "commands.play.toggle.paused")
-            await self._send_ephemeral(interaction, message)
+
+        self._update_play_pause_button(player)
+
+        try:
+            embed_message = getattr(player, "current_embed_message", None)
+            new_embed = None
+            current_track = getattr(player, "current", None)
+            if embed_message and current_track:
+                build_embed = getattr(self.bot, "_build_now_playing_embed", None)
+                if callable(build_embed):
+                    new_embed = build_embed(player, current_track)
+
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(view=self, embed=new_embed)
+            elif embed_message:
+                await embed_message.edit(view=self, embed=new_embed)
+            else:
+                await interaction.edit_original_response(view=self)
+        except discord.NotFound:
+            pass
+        except discord.HTTPException:
+            pass
 
     @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, custom_id="stop")
     async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -356,17 +413,14 @@ class MusicControlView(discord.ui.View):
             self._guild_id = interaction.guild.id
         self._apply_loop_button_state(new_mode)
 
-        message = self._translate(
-            interaction,
-            response_key,
-            default=response_default,
-        )
-
-        await self._send_ephemeral(interaction, message or response_default)
-
         try:
-            await interaction.message.edit(view=self)
-        except Exception:
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(view=self)
+            else:
+                await interaction.edit_original_response(view=self)
+        except discord.NotFound:
+            pass
+        except discord.HTTPException:
             pass
 
     @discord.ui.button(emoji="📜", style=discord.ButtonStyle.secondary, custom_id="play_lyrics", row=1)
