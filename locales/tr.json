@@ -177,7 +177,8 @@
         "requested_by": "👤 İsteyen kişi:",
         "queue_value": "{count} parça",
         "status": {
-          "playing": "🔄 Oynatılıyor"
+          "playing": "🔄 Oynatılıyor",
+          "paused": "⏸️ Duraklatıldı"
         },
         "footer": "Oynatmayı kontrol etmek için buttonları kullanın. • Ses için 🔉🔊"
       },

@@ -177,7 +177,8 @@
         "requested_by": "👤 Solicitado por",
         "queue_value": "{count} música(s)",
         "status": {
-          "playing": "🔄 Reproduzindo"
+          "playing": "🔄 Reproduzindo",
+          "paused": "⏸️ Pausado"
         },
         "footer": "Use os botões abaixo para controlar a reprodução • 🔉🔊 para volume"
       },

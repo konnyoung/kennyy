@@ -177,7 +177,8 @@
         "requested_by": "👤 Requested by",
         "queue_value": "{count} track(s)",
         "status": {
-          "playing": "🔄 Playing"
+           "playing": "🔄 Playing",
+           "paused": "⏸️ Paused"
         },
         "footer": "Use the buttons below to control playback • 🔉🔊 for volume"
       },
