@@ -812,6 +812,85 @@ class SearchCommands(commands.Cog):
             return translator(key, guild_id=guild_id, default=default, **kwargs)
         return default if default is not None else key
 
+    def _strip_search_prefix(self, query: str) -> str:
+        """Remove prefixos yt/ytm/scsearch para evitar duplicação na requisição."""
+        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:")
+        for prefix in prefixes:
+            if query.lower().startswith(prefix):
+                return query[len(prefix):]
+        return query
+
+    async def _search_with_fallback(
+        self,
+        interaction: discord.Interaction,
+        query: str,
+        *,
+        is_url: bool = False,
+        timeout: float | None = None,
+        max_attempts: int | None = None,
+    ) -> wavelink.Playlist | list[wavelink.Playable] | None:
+        """Busca em múltiplas fontes (YT/YTM/SC) tentando variantes com aspas e 'audio'."""
+
+        async def _fetch(identifier: str):
+            try:
+                return await wavelink.Pool.fetch_tracks(identifier)
+            except Exception:
+                return await interaction.client.search_with_failover(identifier)
+
+        attempts: list[str]
+        clean_query = self._strip_search_prefix(query)
+        if is_url:
+            attempts = [query]
+        else:
+            quoted = f'"{clean_query}"'
+            attempts = [
+                f"ytsearch:{clean_query}",
+                f"ytsearch:{quoted}",
+                f"ytsearch:{clean_query} audio",
+                f"ytmsearch:{clean_query}",
+                f"ytmsearch:{quoted}",
+                f"ytmsearch:{clean_query} audio",
+                f"scsearch:{clean_query}",
+                f"scsearch:{quoted}",
+            ]
+
+        if max_attempts is not None:
+            attempts = attempts[:max_attempts]
+
+        last_exc: Exception | None = None
+
+        for attempt in attempts:
+            try:
+                coro = _fetch(attempt)
+                tracks = await asyncio.wait_for(coro, timeout=timeout) if timeout else await coro
+            except Exception as exc:
+                last_exc = exc
+                continue
+
+            if not tracks:
+                continue
+
+            if isinstance(tracks, wavelink.Playlist):
+                if getattr(tracks, "tracks", None):
+                    return tracks
+                continue
+
+            playable_cls = getattr(wavelink, "Playable", None)
+            if playable_cls and isinstance(tracks, playable_cls):
+                return [tracks]
+
+            try:
+                tracks_list = list(tracks)
+            except TypeError:
+                tracks_list = []
+
+            if tracks_list:
+                return tracks_list
+
+        if last_exc:
+            raise last_exc
+        return None
+
     @app_commands.command(name="search", description="Search for tracks and choose which one to play")
     @app_commands.describe(query="Termo de busca ou URL para encontrar músicas")
     async def search(self, interaction: discord.Interaction, query: str):
@@ -836,11 +915,13 @@ class SearchCommands(commands.Cog):
             return await interaction.followup.send(embed=embed)
 
         try:
-            # Realiza a busca
-            if query.startswith(('http://', 'https://')):
-                tracks = await interaction.client.search_with_failover(query)
-            else:
-                tracks = await interaction.client.search_with_failover(f"ytsearch:{query}")
+            # Realiza a busca com fallback multi-fonte
+            is_url = query.startswith(('http://', 'https://'))
+            tracks = await self._search_with_fallback(
+                interaction,
+                query,
+                is_url=is_url,
+            )
 
             if not tracks:
                 embed = discord.Embed(

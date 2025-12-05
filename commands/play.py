@@ -4,6 +4,7 @@ from discord import app_commands
 import wavelink
 import re
 import asyncio
+import difflib
 
 from commands import iter_wavelink_nodes, player_is_ready, resolve_wavelink_player
 
@@ -540,6 +541,64 @@ class PlayCommands(commands.Cog):
             print(f"Erro inesperado ao responder autocomplete: {exc}")
         return []
 
+    def _normalize_search_text(self, text: str) -> str:
+        """Normaliza texto para comparação de busca."""
+        text = text.lower()
+        text = re.sub(r"\(.*?\)|\[.*?\]", " ", text)
+        text = re.sub(r"[^a-z0-9çãõáàâêéíóôúüñ\s]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    def _score_track_match(self, query: str, track: wavelink.Playable) -> float:
+        """Retorna uma pontuação de aderência do track ao termo buscado."""
+        query_norm = self._normalize_search_text(query)
+        title_raw = getattr(track, "title", "") or ""
+        author_raw = getattr(track, "author", "") or ""
+
+        title_norm = self._normalize_search_text(title_raw)
+        author_norm = self._normalize_search_text(author_raw)
+
+        query_tokens = set(query_norm.split())
+        title_tokens = set(title_norm.split())
+        author_tokens = set(author_norm.split())
+
+        title_sim = difflib.SequenceMatcher(None, query_norm, title_norm).ratio()
+
+        token_overlap = 0.0
+        if query_tokens:
+            token_overlap = len(query_tokens & title_tokens) / len(query_tokens)
+
+        starts_with_bonus = 0.15 if title_norm.startswith(query_norm) else 0.0
+        exact_bonus = 0.25 if title_norm == query_norm else 0.0
+
+        author_bonus = 0.0
+        if query_tokens and author_tokens:
+            author_bonus = 0.1 * (len(query_tokens & author_tokens) / len(author_tokens))
+
+        penalty = 0.0
+        remix_markers = {"live", "remix", "cover", "karaoke"}
+        if title_tokens & remix_markers and not (query_tokens & remix_markers):
+            penalty += 0.1
+
+        score = (title_sim * 0.6) + (token_overlap * 0.25) + starts_with_bonus + exact_bonus + author_bonus - penalty
+        return score
+
+    def _pick_best_track(self, query: str, tracks: list[wavelink.Playable]) -> wavelink.Playable:
+        """Seleciona a faixa com melhor aderência ao termo de busca."""
+        if not tracks:
+            raise ValueError("Lista de tracks vazia")
+
+        scored = []
+        for track in tracks:
+            try:
+                score = self._score_track_match(query, track)
+            except Exception:
+                score = 0.0
+            scored.append((score, track))
+
+        scored.sort(key=lambda item: item[0], reverse=True)
+        return scored[0][1]
+
     def is_url(self, string):
         """Verifica se a string é uma URL válida"""
         url_pattern = re.compile(
@@ -550,6 +609,85 @@ class PlayCommands(commands.Cog):
             r'(?::\d+)?'
             r'(?:/?|[/?]\S+)$', re.IGNORECASE)
         return url_pattern.match(string)
+
+    def _strip_search_prefix(self, query: str) -> str:
+        """Remove prefixos yt/ytm/scsearch duplicados para evitar consultas inválidas."""
+        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:")
+        for prefix in prefixes:
+            if query.lower().startswith(prefix):
+                return query[len(prefix):]
+        return query
+
+    async def _search_with_fallback(
+        self,
+        interaction: discord.Interaction,
+        query: str,
+        *,
+        is_url: bool = False,
+        timeout: float | None = None,
+        max_attempts: int | None = None,
+    ) -> wavelink.Playlist | list[wavelink.Playable] | None:
+        """Tenta buscar tracks em múltiplos prefixos (YouTube/YouTube Music/SoundCloud)."""
+
+        async def _fetch(identifier: str):
+            try:
+                return await wavelink.Pool.fetch_tracks(identifier)
+            except Exception:
+                return await interaction.client.search_with_failover(identifier)
+
+        attempts: list[str]
+        clean_query = self._strip_search_prefix(query)
+        if is_url:
+            attempts = [query]
+        else:
+            quoted = f'"{clean_query}"'
+            attempts = [
+                f"ytsearch:{clean_query}",
+                f"ytsearch:{quoted}",
+                f"ytsearch:{clean_query} audio",
+                f"ytmsearch:{clean_query}",
+                f"ytmsearch:{quoted}",
+                f"ytmsearch:{clean_query} audio",
+                f"scsearch:{clean_query}",
+                f"scsearch:{quoted}",
+            ]
+
+        if max_attempts is not None:
+            attempts = attempts[:max_attempts]
+
+        last_exc: Exception | None = None
+
+        for attempt in attempts:
+            try:
+                coro = _fetch(attempt)
+                tracks = await asyncio.wait_for(coro, timeout=timeout) if timeout else await coro
+            except Exception as exc:
+                last_exc = exc
+                continue
+
+            if not tracks:
+                continue
+
+            if isinstance(tracks, wavelink.Playlist):
+                if getattr(tracks, "tracks", None):
+                    return tracks
+                continue
+
+            playable_cls = getattr(wavelink, "Playable", None)
+            if playable_cls and isinstance(tracks, playable_cls):
+                return [tracks]
+
+            try:
+                tracks_list = list(tracks)
+            except TypeError:
+                tracks_list = []
+
+            if tracks_list:
+                return tracks_list
+
+        if last_exc:
+            raise last_exc
+        return None
 
     async def search_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Função de autocomplete para buscar músicas"""
@@ -580,12 +718,14 @@ class PlayCommands(commands.Cog):
                 ],
             )
 
+        is_url = self.is_url(current)
         try:
-            # Busca no YouTube com o termo digitado (limita tempo para evitar timeout do Discord)
-            search_query = f"ytsearch:{current}"
-            tracks = await asyncio.wait_for(
-                interaction.client.search_with_failover(search_query),
+            tracks = await self._search_with_fallback(
+                interaction,
+                current,
+                is_url=is_url,
                 timeout=AUTOCOMPLETE_TIMEOUT_SECONDS,
+                max_attempts=2 if not is_url else None,
             )
         except asyncio.TimeoutError:
             return await self._send_autocomplete_choices(
@@ -648,6 +788,12 @@ class PlayCommands(commands.Cog):
                 ],
             )
 
+        # Ordena pelos melhores match para priorizar sugestões relevantes
+        try:
+            tracks = sorted(tracks, key=lambda t: self._score_track_match(current, t), reverse=True)
+        except Exception:
+            pass
+
         # Cria lista de sugestões (máximo 25 por limitação do Discord)
         choices: list[app_commands.Choice[str]] = []
         for track in tracks[:25]:
@@ -671,7 +817,7 @@ class PlayCommands(commands.Cog):
             if len(display_name) > 100:
                 display_name = display_name[:97] + "..."
 
-            choice_value = title_value or current
+            choice_value = getattr(track, "uri", None) or getattr(track, "url", None) or title_value or current
             choices.append(app_commands.Choice(name=display_name, value=choice_value))
 
         if not choices:
@@ -1104,11 +1250,9 @@ class PlayCommands(commands.Cog):
             return await interaction.followup.send(embed=embed)
 
         # Busca a música
+        is_url = self.is_url(query)
         try:
-            if self.is_url(query):
-                tracks = await interaction.client.search_with_failover(query)
-            else:
-                tracks = await interaction.client.search_with_failover(f"ytsearch:{query}")
+            tracks = await self._search_with_fallback(interaction, query, is_url=is_url)
         except Exception as e:
             embed = self._error_embed(
                 interaction,
@@ -1204,7 +1348,28 @@ class PlayCommands(commands.Cog):
                         )
                         return await interaction.followup.send(embed=embed)
             else:
-                track = tracks[0]
+                # Garante lista e escolhe o melhor resultado
+                tracks_list: list[wavelink.Playable]
+                if isinstance(tracks, wavelink.Playable):
+                    tracks_list = [tracks]
+                else:
+                    try:
+                        tracks_list = list(tracks)
+                    except TypeError:
+                        tracks_list = []
+
+                if not tracks_list:
+                    embed = self._error_embed(
+                        interaction,
+                        "commands.play.errors.not_found.title",
+                        "commands.play.errors.not_found.description",
+                    )
+                    return await interaction.followup.send(embed=embed)
+
+                try:
+                    track = self._pick_best_track(query, tracks_list)
+                except Exception:
+                    track = tracks_list[0]
                 
                 # Inicializa o dicionário de requesters se não existir
                 if not hasattr(player, "_track_requesters"):
