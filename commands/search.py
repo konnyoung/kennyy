@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -813,8 +814,8 @@ class SearchCommands(commands.Cog):
         return default if default is not None else key
 
     def _strip_search_prefix(self, query: str) -> str:
-        """Remove prefixos yt/ytm/scsearch para evitar duplicação na requisição."""
-        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:")
+        """Remove prefixos de busca conhecidos para evitar duplicação na requisição."""
+        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:", "spsearch:")
         for prefix in prefixes:
             if query.lower().startswith(prefix):
                 return query[len(prefix):]
@@ -829,7 +830,7 @@ class SearchCommands(commands.Cog):
         timeout: float | None = None,
         max_attempts: int | None = None,
     ) -> wavelink.Playlist | list[wavelink.Playable] | None:
-        """Busca em múltiplas fontes (YT/YTM/SC) tentando variantes com aspas e 'audio'."""
+        """Busca em múltiplas fontes com a mesma ordem padrão do /play (YTM → YT → SC → Spotify)."""
 
         async def _fetch(identifier: str):
             try:
@@ -839,20 +840,24 @@ class SearchCommands(commands.Cog):
 
         attempts: list[str]
         clean_query = self._strip_search_prefix(query)
+        default_attempts = []
         if is_url:
             attempts = [query]
         else:
             quoted = f'"{clean_query}"'
-            attempts = [
-                f"ytsearch:{clean_query}",
-                f"ytsearch:{quoted}",
-                f"ytsearch:{clean_query} audio",
+            default_attempts = [
                 f"ytmsearch:{clean_query}",
                 f"ytmsearch:{quoted}",
                 f"ytmsearch:{clean_query} audio",
+                f"ytsearch:{clean_query}",
+                f"ytsearch:{quoted}",
+                f"ytsearch:{clean_query} audio",
                 f"scsearch:{clean_query}",
                 f"scsearch:{quoted}",
+                f"spsearch:{clean_query}",
+                f"spsearch:{quoted}",
             ]
+            attempts = list(default_attempts)
 
         if max_attempts is not None:
             attempts = attempts[:max_attempts]
@@ -889,7 +894,14 @@ class SearchCommands(commands.Cog):
 
         if last_exc:
             raise last_exc
-        return None
+        if is_url:
+            return None
+
+        fallback_attempts = default_attempts if max_attempts is None else default_attempts[:max_attempts]
+        if not fallback_attempts:
+            return None
+
+        return await _run_attempts(fallback_attempts)
 
     @app_commands.command(name="search", description="Search for tracks and choose which one to play")
     @app_commands.describe(query="Termo de busca ou URL para encontrar músicas")

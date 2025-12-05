@@ -612,7 +612,7 @@ class PlayCommands(commands.Cog):
 
     def _strip_search_prefix(self, query: str) -> str:
         """Remove prefixos yt/ytm/scsearch duplicados para evitar consultas inválidas."""
-        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:")
+        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:", "spsearch:")
         for prefix in prefixes:
             if query.lower().startswith(prefix):
                 return query[len(prefix):]
@@ -626,6 +626,7 @@ class PlayCommands(commands.Cog):
         is_url: bool = False,
         timeout: float | None = None,
         max_attempts: int | None = None,
+        provider: str | None = None,
     ) -> wavelink.Playlist | list[wavelink.Playable] | None:
         """Tenta buscar tracks em múltiplos prefixos (YouTube/YouTube Music/SoundCloud)."""
 
@@ -635,59 +636,107 @@ class PlayCommands(commands.Cog):
             except Exception:
                 return await interaction.client.search_with_failover(identifier)
 
+        async def _run_attempts(attempts: list[str]):
+            last_exc: Exception | None = None
+            for attempt in attempts:
+                try:
+                    coro = _fetch(attempt)
+                    tracks = await asyncio.wait_for(coro, timeout=timeout) if timeout else await coro
+                except Exception as exc:
+                    last_exc = exc
+                    continue
+
+                if not tracks:
+                    continue
+
+                if isinstance(tracks, wavelink.Playlist):
+                    if getattr(tracks, "tracks", None):
+                        return tracks
+                    continue
+
+                playable_cls = getattr(wavelink, "Playable", None)
+                if playable_cls and isinstance(tracks, playable_cls):
+                    return [tracks]
+
+                try:
+                    tracks_list = list(tracks)
+                except TypeError:
+                    tracks_list = []
+
+                if tracks_list:
+                    return tracks_list
+            if last_exc:
+                raise last_exc
+            return None
+
         attempts: list[str]
         clean_query = self._strip_search_prefix(query)
+        provider_effective = provider or "ytmusic"  # padrão agora é YouTube Music
+        user_selected_provider = provider is not None
         if is_url:
             attempts = [query]
         else:
             quoted = f'"{clean_query}"'
-            attempts = [
-                f"ytsearch:{clean_query}",
-                f"ytsearch:{quoted}",
-                f"ytsearch:{clean_query} audio",
+            if provider_effective == "youtube":
+                attempts = [
+                    f"ytsearch:{clean_query}",
+                    f"ytsearch:{quoted}",
+                    f"ytsearch:{clean_query} audio",
+                ]
+            elif provider_effective == "ytmusic":
+                attempts = [
+                    f"ytmsearch:{clean_query}",
+                    f"ytmsearch:{quoted}",
+                    f"ytmsearch:{clean_query} audio",
+                ]
+            elif provider_effective == "soundcloud":
+                attempts = [
+                    f"scsearch:{clean_query}",
+                    f"scsearch:{quoted}",
+                ]
+            elif provider_effective == "spotify":
+                attempts = [
+                    f"spsearch:{clean_query}",
+                    f"spsearch:{quoted}",
+                ]
+            else:
+                attempts = [
+                    f"ytmsearch:{clean_query}",
+                    f"ytmsearch:{quoted}",
+                    f"ytmsearch:{clean_query} audio",
+                    f"ytsearch:{clean_query}",
+                    f"ytsearch:{quoted}",
+                    f"ytsearch:{clean_query} audio",
+                    f"scsearch:{clean_query}",
+                    f"scsearch:{quoted}",
+                    f"spsearch:{clean_query}",
+                    f"spsearch:{quoted}",
+                ]
+
+            default_attempts = [
                 f"ytmsearch:{clean_query}",
                 f"ytmsearch:{quoted}",
                 f"ytmsearch:{clean_query} audio",
+                f"ytsearch:{clean_query}",
+                f"ytsearch:{quoted}",
+                f"ytsearch:{clean_query} audio",
                 f"scsearch:{clean_query}",
                 f"scsearch:{quoted}",
+                f"spsearch:{clean_query}",
+                f"spsearch:{quoted}",
             ]
 
         if max_attempts is not None:
             attempts = attempts[:max_attempts]
 
-        last_exc: Exception | None = None
+        # Primeira passada: conforme provider efetivo
+        first_result = await _run_attempts(attempts)
+        if first_result or is_url:
+            return first_result
 
-        for attempt in attempts:
-            try:
-                coro = _fetch(attempt)
-                tracks = await asyncio.wait_for(coro, timeout=timeout) if timeout else await coro
-            except Exception as exc:
-                last_exc = exc
-                continue
-
-            if not tracks:
-                continue
-
-            if isinstance(tracks, wavelink.Playlist):
-                if getattr(tracks, "tracks", None):
-                    return tracks
-                continue
-
-            playable_cls = getattr(wavelink, "Playable", None)
-            if playable_cls and isinstance(tracks, playable_cls):
-                return [tracks]
-
-            try:
-                tracks_list = list(tracks)
-            except TypeError:
-                tracks_list = []
-
-            if tracks_list:
-                return tracks_list
-
-        if last_exc:
-            raise last_exc
-        return None
+        # Fallback amplo se não achou nada
+        fallback_attempts = default_attempts if max_attempts is None else default_attempts[:max_attempts]
+        return await _run_attempts(fallback_attempts)
 
     async def search_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Função de autocomplete para buscar músicas"""
@@ -1169,9 +1218,25 @@ class PlayCommands(commands.Cog):
             return rebuilt_player
 
     @app_commands.command(name="play", description="Play a track or playlist")
-    @app_commands.describe(query="Nome da música, URL do YouTube/Spotify, ou termo de busca")
+    @app_commands.describe(
+        query="Song name, YouTube/Spotify URL, or search term",
+        service="Service to search (default: YouTube Music)",
+    )
+    @app_commands.choices(
+        service=[
+            app_commands.Choice(name="YouTube (Default)", value="youtube"),
+            app_commands.Choice(name="YouTube Music", value="ytmusic"),
+            app_commands.Choice(name="SoundCloud", value="soundcloud"),
+            app_commands.Choice(name="Spotify", value="spotify"),
+        ]
+    )
     @app_commands.autocomplete(query=search_autocomplete)
-    async def play(self, interaction: discord.Interaction, query: str):
+    async def play(
+        self,
+        interaction: discord.Interaction,
+        query: str,
+        service: app_commands.Choice[str] | None = None,
+    ):
         """Comando para reproduzir música"""
         try:
             await interaction.response.defer()
@@ -1251,8 +1316,14 @@ class PlayCommands(commands.Cog):
 
         # Busca a música
         is_url = self.is_url(query)
+        provider = service.value if service else None
         try:
-            tracks = await self._search_with_fallback(interaction, query, is_url=is_url)
+            tracks = await self._search_with_fallback(
+                interaction,
+                query,
+                is_url=is_url,
+                provider=provider,
+            )
         except Exception as e:
             embed = self._error_embed(
                 interaction,
