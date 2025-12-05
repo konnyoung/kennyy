@@ -1729,11 +1729,18 @@ class MusicBot(commands.Bot):
             guild_id=guild_id,
             default="Desconhecido",
         )
-        status_value = self.translate(
-            "commands.play.now_playing.status.playing",
-            guild_id=guild_id,
-            default="🔄 Reproduzindo",
-        )
+        if getattr(player, "paused", False):
+            status_value = self.translate(
+                "commands.play.now_playing.status.paused",
+                guild_id=guild_id,
+                default="⏸️ Pausado",
+            )
+        else:
+            status_value = self.translate(
+                "commands.play.now_playing.status.playing",
+                guild_id=guild_id,
+                default="🔄 Reproduzindo",
+            )
         queue_value = self.translate(
             "commands.play.now_playing.queue_value",
             guild_id=guild_id,
