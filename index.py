@@ -1,4 +1,5 @@
 import discord
+import re
 from discord.ext import commands
 import wavelink
 import os
@@ -1564,6 +1565,74 @@ class MusicBot(commands.Bot):
         player.current_embed_message = message
         return
 
+    def _detect_track_source(self, track: wavelink.Playable | None) -> str | None:
+        """Resolve a fonte principal da faixa para reuso (ícone/cor)."""
+        if track is None:
+            return None
+
+        info = getattr(track, "info", {}) or {}
+        source = str(info.get("sourceName") or info.get("source") or "").lower()
+        uri = (
+            getattr(track, "uri", None)
+            or getattr(track, "url", None)
+            or info.get("uri")
+            or ""
+        ).lower()
+
+        def match(substr: str) -> bool:
+            return substr in source or substr in uri
+
+        if match("music.youtube") or match("ytm"):
+            return "ytmusic"
+        if match("youtube") or match("youtu.be"):
+            return "youtube"
+        if match("spotify"):
+            return "spotify"
+        if match("soundcloud"):
+            return "soundcloud"
+        if match("twitch"):
+            return "twitch"
+
+        return None
+
+    def _track_source_icon(self, track: wavelink.Playable | None) -> str:
+        """Retorna o ícone do serviço da faixa (custom emoji ou 🎵)."""
+        icons = {
+            "ytmusic": "<:ytmusic:1446620983267037395>",
+            "youtube": "<:youtube:1446621413179002991>",
+            "spotify": "<:spotify:1446621523631931423>",
+            "soundcloud": "<:soundcloud:1446621634294452275>",
+            "twitch": "<:twitch:1446621864787968163>",
+        }
+
+        source = self._detect_track_source(track)
+        if source and source in icons:
+            return icons[source]
+        return "🎵"
+
+    def _track_source_color(self, track: wavelink.Playable | None) -> int:
+        """Seleciona uma cor de destaque alinhada ao serviço atual."""
+        colors = {
+            "ytmusic": 0xFF0050,
+            "youtube": 0xFF0000,
+            "spotify": 0x1DB954,
+            "soundcloud": 0xFF5500,
+            "twitch": 0x9146FF,
+        }
+
+        source = self._detect_track_source(track)
+        return colors.get(source, 0x00FF00)
+
+    def _strip_leading_icons(self, text: str) -> str:
+        """Remove emojis/custom emojis no início da string."""
+        if not text:
+            return text
+        # Remove custom emoji no início
+        stripped = re.sub(r"^(<:[^:]+:\d+>\s*)+", "", text)
+        # Remove emojis/pictogramas iniciais
+        stripped = re.sub(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]+\s*", "", stripped)
+        return stripped.strip()
+
     async def _restore_voice_channel_status(self, player: wavelink.Player) -> None:
         channel = getattr(player, "channel", None)
         if channel is None or not isinstance(channel, discord.VoiceChannel):
@@ -1610,12 +1679,15 @@ class MusicBot(commands.Bot):
             return None
 
         guild_id = getattr(player.guild, "id", None)
-
-        title = self.translate(
+        base_title = self.translate(
             "commands.play.now_playing.title",
             guild_id=guild_id,
-            default="🎵 Tocando Agora",
+            default="Tocando Agora",
         )
+        base_title = self._strip_leading_icons(base_title)
+
+        icon = self._track_source_icon(track)
+        title = f"{icon} {base_title}" if base_title else icon
         description = self.translate(
             "commands.play.now_playing.description",
             guild_id=guild_id,
@@ -1623,7 +1695,8 @@ class MusicBot(commands.Bot):
             title=getattr(track, "title", "-"),
         )
 
-        embed = discord.Embed(title=title, description=description, color=0x00ff00)
+        embed_color = self._track_source_color(track)
+        embed = discord.Embed(title=title, description=description, color=embed_color)
 
         artist_label = self.translate(
             "commands.common.labels.artist",
