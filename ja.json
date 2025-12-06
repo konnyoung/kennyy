@@ -1,0 +1,648 @@
+{
+  "languages": {
+    "pt": {
+      "label": "ポルトガル語 (ブラジル)"
+    },
+    "pt-pt": {
+      "label": "ポルトガル語 (ポルトガル)"
+    },
+    "fr": {
+      "label": "フランス語"
+    },
+    "en": {
+      "label": "英語"
+    },
+    "ja": {
+      "label": "日本語"
+    },
+    "tr": {
+      "label": "トルコ語"
+    }
+  },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> Top.gg で応援お願いします！",
+      "description": "気に入ってくれた？ 12時間ごとに投票して、このボットが動き続けるように[こちらをクリック](https://top.gg/bot/920133124095098881)で応援してね",
+      "footer": "使いたいときは /play をどうぞ"
+    },
+    "track_failed": {
+      "title": "❌ 再生できませんでした",
+      "description": "**{track}** を再生できませんでした。\n理由: {reason}",
+      "fallback_reason": "原因不明です（地域制限または一時的な問題かもしれません）。",
+      "footer": "このトラックをスキップして続行します。",
+      "unknown_track": "不明なトラック",
+      "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します"
+    },
+    "track_retry": {
+      "pending": "音楽を流すために少し調整しています… 5秒後にもう一度試します。"
+    },
+    "lonely": {
+      "pause": "{call} に1人だけになったので、2分間キューを一時停止します。誰も戻らなければ切断します。",
+      "resume": "{call} に誰かが戻ってきました！再生を再開します。",
+      "disconnect": "{call} に誰も戻らなかったため切断します。"
+    }
+  },
+  "commands": {
+    "common": {
+      "embeds": {
+        "error_title": "❌ エラー"
+      },
+      "errors": {
+        "no_track": "❌ 再生中のトラックはありません！",
+        "no_track_full": "現在音楽は再生されていません。",
+        "bot_not_connected": "❌ ボットが接続されていません！",
+        "bot_not_connected_full": "ボットはボイスチャンネルに接続していません。",
+        "user_not_in_voice": "ボイスチャンネルに参加してください！"
+      },
+      "labels": {
+        "artist": "アーティスト",
+        "duration": "再生時間",
+        "position": "位置",
+        "title": "タイトル",
+        "unknown_author": "不明",
+        "unknown_track": "不明なトラック"
+      }
+    },
+    "language": {
+      "errors": {
+        "guild_only": "このコマンドはサーバー内でのみ使用できます。",
+        "feature_unavailable": "現在、言語の切り替えは利用できません。",
+        "db_unavailable": "設定を保存するためのデータベースに接続できませんでした。",
+        "unsupported": "その言語はまだサポートされていません。",
+        "no_permission": "サーバー管理者のみがこのサーバーの言語を変更できます。"
+      },
+      "success": {
+        "already_current": {
+          "title": "変更はありません！",
+          "description": "このサーバーではすでに{language_label}で話しています。"
+        },
+        "updated": {
+          "title": "言語を更新しました！",
+          "description": "これからは{language_label}で話します。",
+          "current_language_label": "現在の言語",
+          "footer": "/language を使えばいつでも切り替えできます。"
+        },
+        "save_failed": "今は設定を保存できませんでした。少し待ってからもう一度お試しください。"
+      }
+    },
+    "play": {
+      "volume": {
+        "decrease": {
+          "title": "🔉 音量を下げました"
+        },
+        "increase": {
+          "title": "🔊 音量を上げました"
+        },
+        "change": {
+          "description": "音量を **{old}%** から **{new}%** に変更しました"
+        },
+        "warning": {
+          "title": "⚠️ 注意",
+          "description": "音量を100%以上にすると音が歪む場合があります！"
+        },
+        "command": {
+          "invalid_title": "❌ 無効な音量",
+          "invalid_description": "音量は **0%** から **150%** の間で指定してください。",
+          "title": "🔊 音量を更新しました",
+          "description": "音量を **{old}%** から **{new}%** に変更しました",
+          "level_label": "音量レベル",
+          "level_value": "`{level}%` {bar}",
+          "silenced_title": "🔇 ミュートしました",
+          "silenced_description": "🔊 ボタンまたは /volume で戻せます。"
+        }
+      },
+      "previous": {
+        "restarted": "⏮️ トラックを最初から再生しました！",
+        "none": "⏮️ 前に再生したトラックはありません！"
+      },
+      "toggle": {
+        "resumed": "▶️ 再生を再開しました！",
+        "paused": "⏸️ 一時停止しました！"
+      },
+      "pause": {
+        "resumed_title": "▶️ 再生を再開",
+        "resumed_description": "**{title}** の再生を再開しました。",
+        "paused_title": "⏸️ 一時停止",
+        "paused_description": "**{title}** を一時停止しました。"
+      },
+      "stop": {
+        "success": "⏹️ 再生を停止し、キューをクリアしました！",
+        "embed_title": "⏹️ 再生を停止",
+        "embed_description": "再生を停止し、キューをリセットしました。",
+        "footer": "/play で再び音楽を再生しましょう！"
+      },
+      "skip": {
+        "success": "⏭️ トラックをスキップしました！",
+        "embed_title": "⏭️ トラックをスキップ",
+        "embed_description": "**{track}** をスキップしました。",
+        "next_label": "⏭️ 次のトラック",
+        "next_value": "**{title}**\n{author}"
+      },
+      "shuffle": {
+        "empty": "❌ キューにシャッフルできるトラックがありません！",
+        "success": "🔀 キューをシャッフルしました！（{count} 件）"
+      },
+      "loop": {
+        "button": {
+          "off": "ループ: オフ",
+          "track": "ループ: トラック",
+          "queue": "ループ: キュー"
+        },
+        "responses": {
+          "off": "🔁 ループを無効にしました。",
+          "track": "🔂 現在のトラックのループを有効にしました。",
+          "queue": "🔁 キュー全体のループを有効にしました。"
+        }
+      },
+      "autocomplete": {
+        "prompt": "検索するには2文字以上入力してください...",
+        "url_detected": "URL を検出: {value}...",
+        "no_results": "結果が見つかりません",
+        "error_choice": "検索エラー: {value}",
+        "unknown_title": "不明なタイトル",
+        "timeout": "⏳ 検索に時間がかかっています…そのまま入力を続けてください"
+      },
+      "errors": {
+        "user_not_in_voice": "ボイスチャンネルに参加してください！",
+        "same_voice_channel": "これらの操作を使うには、ボットと同じボイスチャンネルにいる必要があります！",
+        "lavalink_validation": "Lavalink の接続を確認できませんでした: {error}",
+        "lavalink_unavailable": {
+          "title": "❌ Lavalink が利用できません",
+          "description": "オーディオサーバーが応答していません。少し時間をおいてもう一度お試しください。\n\nYouTube 側の IP ブロックかもしれません。心配しないで！ Kennyy は1時間ごとに IP を切り替えて対応しています。"
+        },
+        "connect_voice": "ボイスチャンネルに接続できませんでした: {error}",
+        "search_failure": "検索中に問題が発生しました: {error}",
+        "not_found": {
+          "title": "❌ 見つかりません",
+          "description": "該当するトラックは見つかりませんでした。"
+        },
+        "playlist_start": "プレイリストを開始できませんでした: {error}",
+        "play_start": "再生を開始できませんでした: {error}",
+        "process_failure": "トラックの処理中に問題が発生しました: {error}\n\nYouTube 側の IP ブロックかもしれません。心配しないで！ Kennyy は1時間ごとに IP を切り替えて対応しています。"
+      },
+      "playlist": {
+        "added": {
+          "title": "📋 プレイリストを追加",
+          "description": "**{name}**\n{count} 件のトラックをキューに追加しました",
+          "stats_name": "📊 統計",
+          "stats_value": "キュー内の合計: {queue_count}"
+        }
+      },
+      "start": {
+        "playing_now": "▶️ 再生開始: **{title}**"
+      },
+      "now_playing": {
+        "title": "🎵 再生中",
+        "description": "**{title}**",
+        "volume_label": "音量",
+        "queue_label": "キュー",
+        "status_label": "ステータス",
+        "requested_by": "👤 リクエスト",
+        "queue_value": "{count} 件",
+        "status": {
+          "playing": "🔄 再生中",
+          "paused": "⏸️ 一時停止中"
+        },
+        "footer": "下のボタンで再生を操作できます • 🔉🔊 で音量調整"
+      },
+      "queue": {
+        "added": {
+          "title": "➕ キューに追加",
+          "description": "**{title}**",
+          "position_label": "キューの位置",
+          "eta_label": "⏱️ 推定時間",
+          "footer": "キュー内の合計: {count} 件"
+        }
+      },
+      "seek": {
+        "errors": {
+          "no_track": "❌ 再生中のトラックがありません。",
+          "format": "時間の形式が正しくありません。",
+          "out_of_range": "❌ 0～{max_seconds}秒の範囲で指定してください。",
+          "generic": "❌ シーク中にエラーが発生しました: {error}"
+        },
+        "success": "⏩ {timestamp} に移動しました！"
+      }
+    },
+    "queue": {
+      "embed": {
+        "title": "再生キュー",
+        "empty_description": "キューにトラックはありません",
+        "status": {
+          "playing": "再生中",
+          "paused": "一時停止中"
+        },
+        "now_playing": "▶ 現在再生中",
+        "status_label": "ステータス",
+        "progress_label": "進行状況",
+        "queue": {
+          "more": "... さらに {remaining} 件",
+          "item": "`{index}.` {title} `({duration})`"
+        },
+        "queue_label": "次のトラック",
+        "total_label": "トラック総数",
+        "total_value": "{count}",
+        "queue_time_label": "キューの長さ",
+        "remaining_time_label": "残り時間",
+        "page_label": "ページ",
+        "empty_queue": "キューにトラックはありません",
+        "empty_total_value": "0",
+        "empty_queue_time": "00:00",
+        "footer": "ライブ更新 • /skipto で特定のトラックへ移動"
+      },
+      "labels": {
+        "current_track": "現在のトラック"
+      },
+      "skipto": {
+        "errors": {
+          "empty": "キューにスキップできるトラックがありません。",
+          "invalid_title": "無効な位置",
+          "invalid_description": "1 から {max_position} の数字を指定してください。",
+          "generic": "その位置へスキップできませんでした: {error}"
+        },
+        "success": {
+          "title": "トラックへスキップ",
+          "description": "⏭️ **{title}** へ移動します"
+        }
+      },
+      "clear": {
+        "errors": {
+          "empty": "クリアできるトラックがありません。"
+        },
+        "success": {
+          "title": "キューをクリアしました",
+          "removed_label": "削除したトラック",
+          "removed_value": "{count}",
+          "current_value": "再生中",
+          "title_value": "{title}"
+        }
+      },
+      "shuffle": {
+        "errors": {
+          "empty": "キューにシャッフルできるトラックが足りません。"
+        },
+        "success": {
+          "title": "キューをシャッフル",
+          "shuffled_label": "シャッフルしたトラック",
+          "shuffled_value": "{count}",
+          "next_track_label": "次のトラック",
+          "next_track_value": "{title}",
+          "status_label": "ステータス",
+          "status_value": "順番を更新しました"
+        }
+      },
+      "remove": {
+        "errors": {
+          "empty": "削除できるトラックがありません。",
+          "invalid_title": "無効な位置",
+          "invalid_description": "1 から {max_position} の数字を指定してください。"
+        },
+        "success": {
+          "title": "トラックを削除",
+          "track_label": "トラック",
+          "track_value": "{title}",
+          "position_value": "{position}",
+          "remaining_label": "残りのキュー",
+          "remaining_value": "残り {count} 件"
+        }
+      }
+    },
+    "admin": {
+      "errors": {
+        "no_permission": "❌ このコマンドを使う権限がありません。"
+      },
+      "status": {
+        "labels": {
+          "online": "オンライン",
+          "dnd": "取り込み中",
+          "idle": "退席中",
+          "invisible": "オフライン表示"
+        }
+      },
+      "setstatus": {
+        "success": {
+          "title": "✅ ステータスを更新しました",
+          "description": "新しいステータス: **{status_name}**"
+        }
+      },
+      "setpresence": {
+        "errors": {
+          "message_required": "❌ プレゼンスには 'message' を入力してください。",
+          "streaming_message_required": "❌ ストリーミングを選んだ場合は 'message' を入力してください。",
+          "streaming_url": "❌ 'Streaming' の際は有効な Twitch または YouTube のURLを指定してください。"
+        },
+        "success": {
+          "title": "✅ プレゼンスを更新しました",
+          "cleared": "アクティビティを解除しました",
+          "updated": "アクティビティを設定しました: **{activity_label}** — {message}",
+          "url_label": "URL"
+        }
+      },
+      "logs": {
+        "enable": {
+          "title": "✅ ログを有効化しました",
+          "description": "ボットのログを有効にしました。"
+        },
+        "disable": {
+          "title": "🔕 ログを無効化しました",
+          "description": "ボットのログを無効にしました。"
+        },
+        "status": {
+          "title": "📊 ログの状態",
+          "description": "現在ログは **{status}** です。",
+          "enabled": "有効",
+          "disabled": "無効",
+          "channel_label": "ログチャンネル",
+          "no_channel": "⚠️ 未設定です（.env の LOG_CHANNEL_ID を設定してください）"
+        },
+        "errors": {
+          "no_mongodb": "❌ MongoDB が設定されていません。ログの設定を保存できません。",
+          "enable_failed": "❌ ログを有効化できませんでした: {error}",
+          "disable_failed": "❌ ログを無効化できませんでした: {error}",
+          "status_failed": "❌ ログの状態を取得できませんでした: {error}"
+        }
+      },
+      "activity_types": {
+        "playing": "プレイ中",
+        "listening": "聴取中",
+        "watching": "視聴中",
+        "competing": "競技中",
+        "streaming": "配信中"
+      }
+    },
+    "clearqueue": {
+      "empty": {
+        "title": "キューは空です",
+        "description": "キューにクリアできるトラックはありません。",
+        "current_label": "🎵 現在のトラック",
+        "current_value": "**{title}** は再生中です\n（完全に止めるには /stop を使用）"
+      },
+      "success": {
+        "title": "🗑️ キューをクリアしました",
+        "removed_label": "削除したトラック",
+        "removed_value": "{count}",
+        "status_label": "キューの状態",
+        "status_value": "✅ クリア済み",
+        "current_label": "現在のトラック",
+        "current_value": "再生中",
+        "now_playing_label": "🎵 再生中",
+        "now_playing_value": "**{title}**\n作者: {author}",
+        "footer": "/play で新しい曲を追加しましょう"
+      }
+    },
+    "filter": {
+      "buttons": {
+        "bass_boost": {
+          "label": "バスブースト",
+          "activated": "🎵 バスブースト（中）を有効にしました！",
+          "deactivated": "🎵 バスブーストを無効にしました！",
+          "error": "❌ バスブーストの適用中にエラー: {error}"
+        },
+        "nightcore": {
+          "label": "ナイトコア",
+          "activated": "⚡ ナイトコアを有効にしました！",
+          "deactivated": "⚡ ナイトコアを無効にしました！",
+          "error": "❌ ナイトコアの適用中にエラー: {error}"
+        },
+        "karaoke": {
+          "label": "カラオケ",
+          "activated": "🎤 カラオケを有効にしました！",
+          "deactivated": "🎤 カラオケを無効にしました！",
+          "error": "❌ カラオケの適用中にエラー: {error}"
+        },
+        "rotation": {
+          "label": "8D オーディオ",
+          "activated": "🌀 8D オーディオを有効にしました！",
+          "deactivated": "🌀 8D オーディオを無効にしました！",
+          "error": "❌ 8D オーディオの適用中にエラー: {error}"
+        },
+        "reset": {
+          "label": "リセット",
+          "success": "🔄 すべてのフィルターを解除しました！",
+          "error": "❌ フィルターのリセット中にエラー: {error}"
+        }
+      },
+      "filters": {
+        "embed": {
+          "title": "🎛️ オーディオフィルターパネル",
+          "description": "適用したいフィルターを選択してください。",
+          "now_playing_label": "🎵 再生中",
+          "now_playing_value": "**{title}**\n作者: {author}",
+          "available_label": "🎛️ 利用可能なフィルター",
+          "available_value": "🎵 **バスブースト** - 低音を強調\n⚡ **ナイトコア** - 再生速度とピッチを上げる\n🎤 **カラオケ** - ボーカルを抑える\n🌀 **8D オーディオ** - 回転効果\n🔄 **リセット** - すべて解除",
+          "howto_label": "💡 使い方",
+          "howto_value": "ボタンを押すとフィルターがオン/オフになります。オンになると青色になります。",
+          "footer": "⚠️ フィルターを適用する際は少し待つ場合があります"
+        }
+      },
+      "bassboost": {
+        "off": {
+          "title": "🎵 バスブーストを無効化",
+          "description": "バスブーストを解除しました。"
+        },
+        "on": {
+          "title": "🎵 バスブーストを適用",
+          "description": "バスブーストを **{level}** に設定しました",
+          "settings_label": "🔧 詳細設定"
+        },
+        "errors": {
+          "invalid_title": "❌ 無効なレベル",
+          "invalid_description": "レベル '{level}' は存在しません。使用できる値: high, medium, low, off",
+          "generic": "バスブースト適用中にエラーが発生しました: {error}"
+        }
+      },
+      "reset": {
+        "title": "🔄 フィルターをリセット",
+        "description": "すべてのオーディオフィルターを解除しました。",
+        "removed_label": "✅ 解除したフィルター",
+        "removed_value": "🎵 バスブースト\n⚡ ナイトコア\n🎤 カラオケ\n🌀 8D オーディオ\nその他のアクティブなフィルター",
+        "now_playing_label": "🎵 現在のトラック",
+        "now_playing_value": "**{title}**\n通常の音質に戻りました",
+        "error": "フィルターをリセット中にエラーが発生しました: {error}"
+      }
+    },
+    "help": {
+      "embed": {
+        "title": "📖 利用可能なコマンド",
+        "no_description": "説明なし",
+        "footer": "合計: {count} コマンド"
+      }
+    },
+    "ping": {
+      "embed": {
+        "title": "🏓 Ping",
+        "footer": "現在の計測値"
+      },
+      "fields": {
+        "discord": {
+          "name": "Discord (Gateway)",
+          "value": "{emoji} `{latency} ms`"
+        },
+        "lavalink": {
+          "label": "{identifier} ({scheme}://{host}:{port})",
+          "value": "{emoji} `{latency} ms` • endpoint: `{endpoint}`"
+        },
+        "lavalink_empty": {
+          "name": "Lavalink",
+          "value": "{emoji} 設定が見つかりません"
+        },
+        "cloudflare": {
+          "name": "1.1.1.1",
+          "value": "{emoji} `{latency} ms` • TCP 443"
+        }
+      }
+    },
+    "lyrics": {
+      "errors": {
+        "no_track": {
+          "title": "❌ 音楽が再生されていません",
+          "description": "現在音楽は再生されていません。まず /play で再生してください！"
+        },
+        "not_found": {
+          "title": "❌ 見つかりません",
+          "description": "歌詞を見つけられませんでした: **{query}**"
+        },
+        "fetch_failed": {
+          "title": "❌ 歌詞の取得に失敗",
+          "description": "曲は見つかりましたが歌詞を取得できませんでした。"
+        },
+        "guild_only": "❌ このコマンドはサーバー内でのみ使用できます。",
+        "feature_unavailable": "❌ 現在歌詞は利用できません。少し待ってからもう一度お試しください。"
+      },
+      "embed": {
+        "title": "🎵 {title}",
+        "footer": "出典: {source} • 現在のトラック: {track}"
+      },
+      "searching": {
+        "title": "🎶 歌詞を検索しています",
+        "description": "**{song}** の歌詞を探しています...",
+        "footer": "数秒かかる場合があります。"
+      },
+      "warnings": {
+        "already_active": "⚠️ このチャンネルで既に歌詞が表示されています。"
+      },
+      "stopped": "⏹️ 歌詞の同期が停止されました。",
+      "stop_button": "🛑 停止"
+    },
+    "search": {
+      "dropdown": {
+        "option_description": "👤 {author} • ⏱️ {duration}",
+        "placeholder": "🎵 再生するトラックを選択...",
+        "errors": {
+          "only_requester": "❌ このメニューを操作できるのはコマンドを実行した人だけです！",
+          "user_not_in_voice": "❌ 音楽を再生するにはボイスチャンネルに参加してください！",
+          "connect_voice": "❌ ボイスチャンネルへの接続に失敗しました: {error}",
+          "play": "❌ トラックの再生に失敗しました: {error}"
+        },
+        "footer": {
+          "queue": "🔍 検索から選択 • ボタンで操作できます",
+          "play": "🔍 検索から選択 • ボタンで操作できます"
+        }
+      },
+      "view": {
+        "cancel": {
+          "label": "❌ キャンセル",
+          "errors": {
+            "only_requester": "❌ キャンセルできるのはコマンドを実行した人だけです！"
+          },
+          "embed": {
+            "title": "🚫 検索をキャンセルしました",
+            "description": "**{query}** の検索をキャンセルしました。"
+          }
+        }
+      },
+      "errors": {
+        "user_not_in_voice": "このコマンドを使うにはボイスチャンネルに参加してください！",
+        "no_results": {
+          "title": "❌ 結果がありません",
+          "description": "**{query}** に一致するトラックは見つかりませんでした。",
+          "tips_label": "💡 ヒント",
+          "tips_value": "• より具体的なワードを使う\n• スペルを確認する\n• アーティスト名と曲名を組み合わせる"
+        },
+        "generic": "検索中にエラーが発生しました: {error}"
+      },
+      "playlist": {
+        "title": "🔍 検索結果 - プレイリスト",
+        "description": "**{name}**\nプレイリストからトラックを選択してください:",
+        "info_label": "📋 情報",
+        "info_value": "総トラック数: {total}\n表示中: {showing}"
+      },
+      "results": {
+        "title": "🔍 検索結果",
+        "description": "**{query}** に対して **{count}** 件見つかりました\nトラックを選択してください:",
+        "howto_label": "💡 使い方",
+        "howto_value": "下のメニューから再生したいトラックを選択してください",
+        "preview_label": "🎵 結果のプレビュー",
+        "preview_item": "`{index}.` **{title}**\n👤 {author} • ⏱️ {duration}",
+        "preview_more": "... さらに **{remaining}** 件",
+        "footer": "💡 下のドロップダウンで選択 • 5分後に期限切れ"
+      }
+    }
+  },
+  "logs": {
+    "common": {
+      "unknown": "不明",
+      "member_count": "{count} 人",
+      "verification": {
+        "none": "なし",
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "highest": "最高"
+      },
+      "boost": {
+        "basic": "レベル {tier}",
+        "with_count": "レベル {tier}（{count} ブースト）"
+      }
+    },
+    "guild_join": {
+      "title": "📥 新しいサーバーに参加しました！",
+      "fields": {
+        "name": "サーバー名",
+        "id": "サーバーID",
+        "members": "メンバー数",
+        "owner": "オーナー",
+        "created_at": "作成日",
+        "verification": "認証レベル",
+        "boost": "ブースト",
+        "total": "サーバー数"
+      },
+      "summary": "🌐 これで **{total}** 個のサーバーにいます！"
+    },
+    "guild_remove": {
+      "title": "📤 サーバーから退出しました",
+      "fields": {
+        "name": "サーバー名",
+        "id": "サーバーID",
+        "members": "メンバー数",
+        "owner": "オーナー",
+        "created_at": "作成日",
+        "verification": "認証レベル",
+        "boost": "ブースト",
+        "total": "サーバー数"
+      },
+      "summary": "🌐 現在は **{total}** 個のサーバーに参加しています"
+    },
+    "music_start": {
+      "title": "🎵 新しい曲を再生しました",
+      "fields": {
+        "music": "曲",
+        "server": "サーバー",
+        "channel": "ボイスチャンネル",
+        "requester": "リクエスト"
+      },
+      "unknown_requester": "不明"
+    },
+    "errors": {
+      "title": "❌ エラー: {type}",
+      "fields": {
+        "message": "メッセージ",
+        "guild": "サーバー",
+        "details": "詳細"
+      }
+    },
+    "lavalink": {
+      "details": "ノード: {node}"
+    }
+  }
+}
