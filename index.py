@@ -559,27 +559,6 @@ class MusicBot(commands.Bot):
             await self._evaluate_voice_channel(member.guild)
             return
 
-        joined_channel = getattr(after, "channel", None)
-        left_channel = getattr(before, "channel", None)
-
-        if left_channel is not None or joined_channel is None:
-            await self._evaluate_voice_channel(member.guild)
-            return
-
-        guild = joined_channel.guild
-
-        await asyncio.sleep(1)
-
-        voice_client = guild.voice_client
-        if voice_client is None or getattr(voice_client, "channel", None) != joined_channel:
-            return
-
-        try:
-            await guild.change_voice_state(channel=joined_channel, self_deaf=True)
-            print(f"🔇 Bot ensurdecido no servidor: {guild.name}")
-        except Exception as e:
-            print(f"Erro ao ensurdecer bot: {e}")
-
         await self._evaluate_voice_channel(member.guild)
 
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
@@ -1006,12 +985,6 @@ class MusicBot(commands.Bot):
             if track is None:
                 return
         try:
-            guild = player.guild
-            if guild and guild.voice_client:
-                await guild.change_voice_state(channel=guild.voice_client.channel, self_deaf=True)
-        except Exception as e:
-            print(f"Erro ao garantir ensurdecimento do bot: {e}")
-        try:
             channel = getattr(player, "channel", None)
             if channel and isinstance(channel, discord.VoiceChannel):
                 if not hasattr(player, "_original_channel_status"):
@@ -1057,6 +1030,38 @@ class MusicBot(commands.Bot):
 
         if reason_upper == "LOAD_FAILED":
             exception_info = getattr(player, "_last_error", None)
+
+            pending = getattr(player, "_warp_retry_future", None)
+            if pending and not pending.done():
+                try:
+                    success = await pending
+                except Exception as exc:
+                    print(f"Warp retry future falhou: {exc}")
+                    success = False
+                player._last_error = None
+                if success:
+                    return
+
+            if pending and pending.done():
+                try:
+                    success = pending.result()
+                except Exception as exc:
+                    print(f"Warp retry future result erro: {exc}")
+                    success = False
+                player._last_error = None
+                if success:
+                    return
+
+            if getattr(player, "_warp_retry_pending", False) and not getattr(player, "_warp_retry_attempted", False):
+                player._warp_retry_attempted = True
+                retry_track = getattr(player, "_warp_retry_track", None) or payload.track
+                scheduled = await self._schedule_warp_retry(player, retry_track)
+                player._warp_retry_pending = False
+                player._warp_retry_track = None
+                player._last_error = None
+                if scheduled:
+                    return
+
             fallback_started = await self._try_play_fallback(player, payload.track, exception_info)
             player._last_error = None
             if fallback_started:
@@ -1139,6 +1144,12 @@ class MusicBot(commands.Bot):
                     cause or "?",
                 )
             )
+            if self._should_reconnect_warp(track_title, severity, message):
+                existing = getattr(player, "_warp_retry_future", None)
+                if not existing or existing.done():
+                    player._warp_retry_future = asyncio.create_task(
+                        self._warp_reconnect_flow(player, payload.track)
+                    )
             
             # Envia log do erro do Lavalink
             if self.logger:
@@ -1159,6 +1170,165 @@ class MusicBot(commands.Bot):
                     print(f"Erro ao enviar log de erro do Lavalink: {exc}")
         else:
             player._last_error = None
+
+    def _should_reconnect_warp(self, track_title: str | None, severity: Any, message: Any) -> bool:
+        """Confere se o erro atual deve disparar o script de reconexao do WARP."""
+        if not sys.platform.startswith("linux"):
+            return False
+
+        if not severity or str(severity).strip().lower() != "fault":
+            return False
+
+        if not message or str(message).strip() != "Something broke when playing the track.":
+            return False
+
+        return True
+
+    async def _warp_reconnect_flow(self, player: wavelink.Player, track: wavelink.Playable | None) -> bool:
+        """Roda o script WARP, avisa o usuario e tenta re-tocar a mesma faixa apos 5s."""
+        if track is None:
+            track = getattr(player, "current", None)
+        if track is None:
+            return False
+
+        guild = getattr(player, "guild", None)
+        guild_id = getattr(guild, "id", None)
+
+        channel = getattr(player, "text_channel", None)
+        if channel is None:
+            requester = getattr(track, "requester", None)
+            if requester and hasattr(requester, "channel"):
+                channel = requester.channel
+        if channel is None:
+            channel = self._preferred_text_channel(player, guild)
+
+        notify_message = self.translate(
+            "player.track_retry.pending",
+            guild_id=guild_id,
+            default="Estou fazendo alguns ajustezinhos para tocar sua musica... Tentando novamente em 5s.",
+        )
+        notify_title = self.translate(
+            "player.track_retry.title",
+            guild_id=guild_id,
+            default="Reconectando o áudio",
+        )
+
+        if channel is not None:
+            try:
+                embed = discord.Embed(
+                    title=notify_title,
+                    description=notify_message,
+                    color=0x5865F2,
+                )
+                await channel.send(embed=embed)
+            except Exception as exc:
+                print(f"Falha ao enviar aviso de retry WARP: {exc}")
+
+        try:
+            player._warp_retry_inflight = True
+            await self._run_warp_reconnect_script()
+            try:
+                await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                return False
+
+            await player.play(track)
+            loop_mode = self._get_loop_mode(player)
+            self._apply_loop_mode(player, loop_mode)
+            return True
+        except Exception as exc:
+            print(f"Falha no fluxo de retry WARP: {exc}")
+            return False
+        finally:
+            player._warp_retry_inflight = False
+            try:
+                player._warp_retry_future = None
+            except Exception:
+                pass
+
+    async def _schedule_warp_retry(self, player: wavelink.Player, track: wavelink.Playable | None, delay_seconds: float = 5.0) -> bool:
+        """Avisa o usuario e tenta reproduzir novamente apos a reconexao WARP."""
+        if track is None:
+            return False
+
+        guild = getattr(player, "guild", None)
+        guild_id = getattr(guild, "id", None)
+
+        channel = getattr(player, "text_channel", None)
+        if channel is None:
+            requester = getattr(track, "requester", None)
+            if requester and hasattr(requester, "channel"):
+                channel = requester.channel
+        if channel is None:
+            channel = self._preferred_text_channel(player, guild)
+
+        message = self.translate(
+            "player.track_retry.pending",
+            guild_id=guild_id,
+            default="Estou fazendo alguns ajustezinhos para tocar sua musica... Tentando novamente em 5s.",
+        )
+
+        if channel is not None:
+            try:
+                await channel.send(message)
+            except Exception as exc:
+                print(f"Falha ao avisar sobre nova tentativa de reproducao: {exc}")
+
+        reconnect_task = getattr(player, "_warp_reconnect_task", None)
+        if reconnect_task and not reconnect_task.done():
+            try:
+                await reconnect_task
+            except Exception as exc:
+                print(f"Erro aguardando script de reconexao WARP: {exc}")
+
+        try:
+            await asyncio.sleep(delay_seconds)
+        except asyncio.CancelledError:
+            return False
+
+        try:
+            await player.play(track)
+            loop_mode = self._get_loop_mode(player)
+            self._apply_loop_mode(player, loop_mode)
+            return True
+        except Exception as exc:
+            print(f"Nao foi possivel re-tentar a faixa apos reconexao WARP: {exc}")
+            return False
+
+    async def _run_warp_reconnect_script(self) -> None:
+        """Executa o script fornecido para reconectar o WARP e loga o resultado."""
+        script = (
+            'LOG="/var/log/warp-reconnect.log"\n'
+            'if ! touch "$LOG" 2>/dev/null; then\n'
+            '  LOG="/tmp/warp-reconnect.log"\n'
+            '  touch "$LOG" 2>/dev/null\n'
+            'fi\n'
+            'echo "==== Execucao em $(date) ====" >> "$LOG"\n'
+            'warp-cli --accept-tos disconnect >> "$LOG" 2>&1\n'
+            'sleep 1\n'
+            'warp-cli --accept-tos connect >> "$LOG" 2>&1\n'
+            'echo "" >> "$LOG"\n'
+        )
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "/bin/bash",
+                "-s",
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate(script.encode())
+
+            if proc.returncode != 0:
+                print(
+                    "Script de reconexao WARP retornou codigo %s. stdout: %s stderr: %s"
+                    % (proc.returncode, stdout.decode().strip(), stderr.decode().strip())
+                )
+        except FileNotFoundError:
+            print("bash not found; nao foi possivel executar o script de reconexao WARP.")
+        except Exception as exc:
+            print(f"Erro ao executar script de reconexao WARP: {exc}")
 
     async def _handle_queue_finished(
         self,
@@ -1202,11 +1372,13 @@ class MusicBot(commands.Bot):
                 if channel:
                     title = self.translate("player.queue_finished.title", guild_id=guild_id)
                     description = self.translate("player.queue_finished.description", guild_id=guild_id)
+                    footer = self.translate("player.queue_finished.footer", guild_id=guild_id)
                     embed = discord.Embed(
                         title=title,
                         description=description,
-                        color=0x0099ff,
+                        color=0xFF3366,
                     )
+                    embed.set_footer(text=footer)
                     await channel.send(embed=embed)
             except Exception as e:
                 print(f"Erro ao enviar embed de fila finalizada: {e}")
