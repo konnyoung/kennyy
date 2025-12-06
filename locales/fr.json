@@ -19,6 +19,30 @@
       "label": "Turc"
     }
   },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> S'il te plaît, vote pour moi sur Top.gg !",
+      "description": "Tu apprécies ? Donne un vote toutes les 12h et aide le bot à rester en ligne en [cliquant ici](https://top.gg/bot/920133124095098881)",
+      "footer": "Utilise /play à nouveau quand tu veux"
+    },
+    "track_failed": {
+      "title": "❌ Impossible de lire",
+      "description": "Je n'ai pas pu lire **{track}**.\nRaison : {reason}",
+      "fallback_reason": "Raison inconnue (peut-être une restriction régionale ou une indisponibilité temporaire).",
+      "footer": "Je vais ignorer cette piste et continuer.",
+      "unknown_track": "Piste inconnue",
+      "fallback_playing": "⚠️ Je n'ai pas pu lire **{original}** (connexion requise). Lecture d'une alternative : **{fallback}**"
+    },
+    "track_retry": {
+      "title": "Reconnexion audio",
+      "pending": "Je fais quelques petits ajustements pour lire ta musique... Nouvel essai dans 5s."
+    },
+    "lonely": {
+      "pause": "Je me retrouve seul dans {call}. Je mets la file en pause pendant 2 minutes en attendant que quelqu'un revienne. Sinon, je me déconnecterai !",
+      "resume": "Quelqu'un a rejoint {call} ! Reprise de la lecture.",
+      "disconnect": "Personne n'est revenu dans {call}. Je me déconnecte maintenant."
+    }
+  },
   "commands": {
     "common": {
       "embeds": {
@@ -145,7 +169,7 @@
         "lavalink_validation": "Impossible de valider la connexion Lavalink : {error}",
         "lavalink_unavailable": {
           "title": "❌ Lavalink indisponible",
-          "description": "Le serveur audio ne répond pas pour le moment. Réessayez bientôt."
+          "description": "Le serveur audio ne répond pas pour le moment. Réessayez bientôt.\n\nIl se peut que YouTube bloque l'IP. Pas d'inquiétude ! Kennyy gère en changeant d'IP chaque heure."
         },
         "connect_voice": "Impossible de rejoindre le salon vocal : {error}",
         "search_failure": "Une erreur est survenue pendant la recherche : {error}",
@@ -155,7 +179,7 @@
         },
         "playlist_start": "Impossible de démarrer la playlist : {error}",
         "play_start": "Impossible de démarrer la lecture : {error}",
-        "process_failure": "Un problème est survenu lors du traitement de la piste : {error}"
+        "process_failure": "Un problème est survenu lors du traitement de la piste : {error}\n\nIl se peut que YouTube bloque l'IP. Pas d'inquiétude ! Kennyy gère en changeant d'IP chaque heure."
       },
       "playlist": {
         "added": {
@@ -620,25 +644,6 @@
     },
     "lavalink": {
       "details": "Nœud : {node}"
-    }
-  },
-  "player": {
-    "queue_finished": {
-      "title": "File terminée !",
-      "description": "Je me retire pour l'instant, mais rappelle-moi quand tu veux !"
-    },
-    "track_failed": {
-      "title": "❌ Impossible de lire",
-      "description": "Je n'ai pas pu lire **{track}**.\nRaison : {reason}",
-      "fallback_reason": "Raison inconnue (peut-être une restriction régionale ou une indisponibilité temporaire).",
-      "footer": "Je vais ignorer cette piste et continuer.",
-      "unknown_track": "Piste inconnue",
-      "fallback_playing": "⚠️ Je n'ai pas pu lire **{original}** (connexion requise). Lecture d'une alternative : **{fallback}**"
-    },
-    "lonely": {
-      "pause": "Je me retrouve seul dans {call}. Je mets la file en pause pendant 2 minutes en attendant que quelqu'un revienne. Sinon, je me déconnecterai !",
-      "resume": "Quelqu'un a rejoint {call} ! Reprise de la lecture.",
-      "disconnect": "Personne n'est revenu dans {call}. Je me déconnecte maintenant."
     }
   }
 }

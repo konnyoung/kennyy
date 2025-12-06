@@ -19,6 +19,30 @@
       "label": "Turco"
     }
   },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> Por favorzinho, vote em mim no Top.gg!",
+      "description": "Está gostando? Dê um voto a cada 12 horas e ajude o bot a continuar ativo [clicando aqui](https://top.gg/bot/920133124095098881)",
+      "footer": "Use /play novamente quando quiser"
+    },
+    "track_failed": {
+      "title": "❌ Não consegui reproduzir",
+      "description": "Não consegui reproduzir **{track}**.\nMotivo: {reason}",
+      "fallback_reason": "Motivo desconhecido (pode ser restrição regional ou indisponibilidade temporária).",
+      "footer": "Vou saltar esta faixa e continuar.",
+      "unknown_track": "Faixa desconhecida",
+      "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). A tocar uma alternativa: **{fallback}**"
+    },
+    "track_retry": {
+      "title": "A reconectar o áudio",
+      "pending": "Estou a fazer alguns ajustezinhos para tocar a tua música... A tentar de novo em 5s."
+    },
+    "lonely": {
+      "pause": "Fiquei sozinho em {call}. Vou pausar a fila por 2 minutos até alguém voltar. Caso contrário, vou desconectar-me!",
+      "resume": "Alguém entrou em {call}! A retomar a fila.",
+      "disconnect": "Ninguém voltou para {call}. Vou desconectar-me agora."
+    }
+  },
   "commands": {
     "common": {
       "embeds": {
@@ -145,7 +169,7 @@
         "lavalink_validation": "Não foi possível validar a ligação com o Lavalink: {error}",
         "lavalink_unavailable": {
           "title": "❌ Lavalink indisponível",
-          "description": "O servidor de áudio não está a responder neste momento. Tenta novamente em instantes."
+          "description": "O servidor de áudio não está respondendo no momento. Tente novamente em instantes.\n\nTalvez seja um bloqueio de IP da parte do YouTube. Não se preocupe! Kennyy sabe lutar contra isso e muda de IP a cada 1 hora."
         },
         "connect_voice": "Não foi possível ligar ao canal de voz: {error}",
         "search_failure": "Ocorreu um erro ao procurar a música: {error}",
@@ -155,7 +179,7 @@
         },
         "playlist_start": "Não foi possível iniciar a playlist: {error}",
         "play_start": "Não foi possível iniciar a reprodução: {error}",
-        "process_failure": "Ocorreu um erro ao processar a música: {error}"
+        "process_failure": "Algo deu errado ao processar a faixa: {error}\n\nTalvez seja um bloqueio de IP da parte do YouTube. Não se preocupe! Kennyy sabe lutar contra isso e muda de IP a cada 1 hora."
       },
       "playlist": {
         "added": {
@@ -620,25 +644,6 @@
     },
     "lavalink": {
       "details": "Nó: {node}"
-    }
-  },
-  "player": {
-    "queue_finished": {
-      "title": "A fila terminou!",
-      "description": "Vou sair por agora, mas podes chamar-me novamente quando quiseres!"
-    },
-    "track_failed": {
-      "title": "❌ Não consegui reproduzir",
-      "description": "Não consegui reproduzir **{track}**.\nMotivo: {reason}",
-      "fallback_reason": "Motivo desconhecido (pode ser restrição regional ou indisponibilidade temporária).",
-      "footer": "Vou saltar esta faixa e continuar.",
-      "unknown_track": "Faixa desconhecida",
-      "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). A tocar uma alternativa: **{fallback}**"
-    },
-    "lonely": {
-      "pause": "Fiquei sozinho em {call}. Vou pausar a fila por 2 minutos até alguém voltar. Caso contrário, vou desconectar-me!",
-      "resume": "Alguém entrou em {call}! A retomar a fila.",
-      "disconnect": "Ninguém voltou para {call}. Vou desconectar-me agora."
     }
   }
 }

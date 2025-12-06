@@ -19,6 +19,29 @@
       "label": "トルコ語"
     }
   },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> Top.gg で応援お願いします！",
+      "description": "気に入ってくれた？ 12時間ごとに投票して、このボットが動き続けるように[こちらをクリック](https://top.gg/bot/920133124095098881)で応援してね",
+      "footer": "使いたいときは /play をどうぞ"
+    },
+    "track_failed": {
+      "title": "❌ 再生できませんでした",
+      "description": "**{track}** を再生できませんでした。\n理由: {reason}",
+      "fallback_reason": "原因不明です（地域制限または一時的な問題かもしれません）。",
+      "footer": "このトラックをスキップして続行します。",
+      "unknown_track": "不明なトラック",
+      "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します"
+    },
+    "track_retry": {
+      "pending": "音楽を流すために少し調整しています… 5秒後にもう一度試します。"
+    },
+    "lonely": {
+      "pause": "{call} に1人だけになったので、2分間キューを一時停止します。誰も戻らなければ切断します。",
+      "resume": "{call} に誰かが戻ってきました！再生を再開します。",
+      "disconnect": "{call} に誰も戻らなかったため切断します。"
+    }
+  },
   "commands": {
     "common": {
       "embeds": {
@@ -145,7 +168,7 @@
         "lavalink_validation": "Lavalink の接続を確認できませんでした: {error}",
         "lavalink_unavailable": {
           "title": "❌ Lavalink が利用できません",
-          "description": "オーディオサーバーが応答していません。少し時間をおいてもう一度お試しください。"
+          "description": "オーディオサーバーが応答していません。少し時間をおいてもう一度お試しください。\n\nYouTube 側の IP ブロックかもしれません。心配しないで！ Kennyy は1時間ごとに IP を切り替えて対応しています。"
         },
         "connect_voice": "ボイスチャンネルに接続できませんでした: {error}",
         "search_failure": "検索中に問題が発生しました: {error}",
@@ -155,7 +178,7 @@
         },
         "playlist_start": "プレイリストを開始できませんでした: {error}",
         "play_start": "再生を開始できませんでした: {error}",
-        "process_failure": "トラックの処理中に問題が発生しました: {error}"
+        "process_failure": "トラックの処理中に問題が発生しました: {error}\n\nYouTube 側の IP ブロックかもしれません。心配しないで！ Kennyy は1時間ごとに IP を切り替えて対応しています。"
       },
       "playlist": {
         "added": {
@@ -620,25 +643,6 @@
     },
     "lavalink": {
       "details": "ノード: {node}"
-    }
-  },
-  "player": {
-    "queue_finished": {
-      "title": "キューが終了しました！",
-      "description": "今は離脱しますが、いつでも呼んでください！"
-    },
-    "track_failed": {
-      "title": "❌ 再生できませんでした",
-      "description": "**{track}** を再生できませんでした。\n理由: {reason}",
-      "fallback_reason": "原因不明です（地域制限または一時的な問題かもしれません）。",
-      "footer": "このトラックをスキップして続行します。",
-      "unknown_track": "不明なトラック",
-      "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します"
-    },
-    "lonely": {
-      "pause": "{call} に1人だけになったので、2分間キューを一時停止します。誰も戻らなければ切断します。",
-      "resume": "{call} に誰かが戻ってきました！再生を再開します。",
-      "disconnect": "{call} に誰も戻らなかったため切断します。"
     }
   }
 }

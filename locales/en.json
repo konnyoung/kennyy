@@ -19,6 +19,30 @@
       "label": "Turkish"
     }
   },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> Please vote for me on Top.gg!",
+      "description": "Enjoying it? Give a vote every 12 hours and help keep the bot alive by [clicking here](https://top.gg/bot/920133124095098881)",
+      "footer": "Use /play again whenever you want"
+    },
+    "track_failed": {
+      "title": "❌ Couldn't play",
+      "description": "I couldn't play **{track}**.\nReason: {reason}",
+      "fallback_reason": "Unknown reason (it might be region-locked or temporarily unavailable).",
+      "footer": "I'll skip this track and keep going.",
+      "unknown_track": "Unknown track",
+      "fallback_playing": "⚠️ I couldn't play **{original}** (login required). Playing an alternative: **{fallback}**"
+    },
+    "track_retry": {
+      "title": "Reconnecting audio",
+      "pending": "I'm making a few tweaks to play your song... Trying again in 5s."
+    },
+    "lonely": {
+      "pause": "I was left alone in {call}. Pausing the queue for 2 minutes until someone returns. Otherwise I'll disconnect!",
+      "resume": "Someone joined {call}! Resuming playback.",
+      "disconnect": "No one returned to {call}. Disconnecting now."
+    }
+  },
   "commands": {
     "common": {
       "embeds": {
@@ -145,7 +169,7 @@
         "lavalink_validation": "Couldn't validate the Lavalink connection: {error}",
         "lavalink_unavailable": {
           "title": "❌ Lavalink unavailable",
-          "description": "The audio server isn't responding right now. Try again in a moment."
+          "description": "The audio server isn't responding right now. Try again in a moment.\n\nIt might be a YouTube-side IP block. Don't worry! Kennyy handles this by rotating IPs every hour."
         },
         "connect_voice": "Couldn't connect to the voice channel: {error}",
         "search_failure": "Something went wrong while searching: {error}",
@@ -155,7 +179,7 @@
         },
         "playlist_start": "Couldn't start the playlist: {error}",
         "play_start": "Couldn't start playback: {error}",
-        "process_failure": "Something went wrong while processing the track: {error}"
+        "process_failure": "Something went wrong while processing the track: {error}\n\nIt might be a YouTube-side IP block. Don't worry! Kennyy handles this by rotating IPs every hour."
       },
       "playlist": {
         "added": {
@@ -620,25 +644,6 @@
     },
     "lavalink": {
       "details": "Node: {node}"
-    }
-  },
-  "player": {
-    "queue_finished": {
-      "title": "Queue finished!",
-      "description": "I'm heading out for now, but call me again any time!"
-    },
-    "track_failed": {
-      "title": "❌ Couldn't play",
-      "description": "I couldn't play **{track}**.\nReason: {reason}",
-      "fallback_reason": "Unknown reason (it might be region‑locked or temporarily unavailable).",
-      "footer": "I'll skip this track and keep going.",
-      "unknown_track": "Unknown track",
-      "fallback_playing": "⚠️ I couldn't play **{original}** (login required). Playing an alternative: **{fallback}**"
-    },
-    "lonely": {
-      "pause": "I was left alone in {call}. Pausing the queue for 2 minutes until someone returns. Otherwise I'll disconnect!",
-      "resume": "Someone joined {call}! Resuming playback.",
-      "disconnect": "No one returned to {call}. Disconnecting now."
     }
   }
 }

@@ -19,47 +19,57 @@
       "label": "Türkçe"
     }
   },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> Lütfen Top.gg'de bana oy ver!",
+      "description": "Beğendin mi? Her 12 saatte bir oy ver ve bota destek olmak için [buraya tıkla](https://top.gg/bot/920133124095098881)",
+      "footer": "/play komutunu istediğinde tekrar kullan"
+    },
+    "track_failed": {
+      "title": "❌ Oynatılamadı!",
+      "description": "**{track}** adlı parçayı çalamıyorum.\nSebep: {reason}",
+      "fallback_reason": "Bilinmeyen sebep (Tamamen ya da bölgesel olarak engellenmiş olabilir.).",
+      "footer": "Bu parçayı atlayıp devam ediyorum.",
+      "unknown_track": "Bilinmeyen parça",
+      "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**"
+    },
+    "track_retry": {
+      "pending": "Müziğini çalmak için ufak ayarlar yapıyorum... 5sn içinde tekrar deneyeceğim."
+    },
+    "lonely": {
+      "pause": "{call} içinde yalnız kaldım. Birisi dönene kadar 2 dakika boyunca kuyruğu duraklatıyorum. Aksi takdirde bağlantıyı keseceğim!",
+      "resume": "Birisi {call} kanalına katıldı! Oynatmaya devam ediyorum.",
+      "disconnect": "Kimse {call} kanalına geri dönmedi. Şimdi bağlantıyı kesiyorum."
+    }
+  },
   "commands": {
     "common": {
-      "embeds": {
-        "error_title": "❌ Hata"
-      },
-      "errors": {
-        "no_track": "❌ Herhangi bir parça çalmıyor.",
-        "no_track_full": "Şu anda herhangi bir parça çalmıyor.",
-        "bot_not_connected": "❌ Bot bağlanamadı.",
-        "bot_not_connected_full": "Bot ses kanalına bağlanamıyor.",
-        "user_not_in_voice": "Bir ses kanalına girmeniz lazım!"
-      },
-      "labels": {
-        "artist": "Sanatçı",
-        "duration": "Uzunluk",
-        "position": "Numara",
-        "title": "Başlık",
-        "unknown_author": "Bilinmeyen",
-        "unknown_track": "Bilinmeyen parça"
-      }
-    },
-    "language": {
-      "errors": {
-        "guild_only": "Bu komut bir sunucu içinde kullanılmalıdır.",
-        "feature_unavailable": "Dil değiştirme şu anda kullanılamıyor.",
-        "db_unavailable": "Ayarlarınızı kaydetmek için database'e erişemiyorum",
-        "unsupported": "Bu dil daha desteklenmiyor.",
-        "no_permission": "Sunucu dilini sadece yöneticiler değiştirebilir."
-      },
-      "success": {
-        "already_current": {
-          "title": "Hiçbir şey değişmedi!",
-          "description": "Hâlihazırda {language_label} olarak konuşuyorum."
+      "volume": {
+        "decrease": {
+          "title": "🔉 Sesi Kıs"
         },
-        "updated": {
-          "title": "Dil Güncellendi!",
-          "description": "Bundan sonra burda {language_label} konuşacağım!",
-          "current_language_label": "Seçili Dil",
-          "footer": "Değiştirmek istediğiniz zaman /language yazarak dili değiştirebilirsiniz!"
+        "increase": {
+          "title": "🔊 Sesi Aç"
         },
-        "save_failed": "Şu anda ayarları kaydedemiyorum. Lütfen birazdan tekrar deneyin."
+        "change": {
+          "description": "**{old}%** olan ses ayarı **{new}%** olarak değiştirildi"
+        },
+        "warning": {
+          "title": "⚠️ Uyarı",
+          "description": "Sesin 100%'ü aşması zararlara sebep olabilir!"
+        },
+        "command": {
+          "invalid_title": "❌ Geçersiz Ses Değeri",
+          "invalid_description": "Ses **0%** ile **150%** arasında olmalıdır.",
+          "title": "🔊 Ses değiştirildi",
+          "description": "**{old}%** olan ses seviyesi **{new}%** olarak güncellendi",
+          "level_label": "Ses Seviyesi",
+          "level_value": "`{level}%` {bar}",
+          "silenced_title": "🔇 Susturulu",
+          "silenced_description": "🔊 buttonlarını kullanarak ya da /volume yazarak tekrardan ayarlayabilirsin."
+        }
+      },
+      "previous": {
       }
     },
     "play": {
@@ -145,7 +155,7 @@
         "lavalink_validation": "Lavalink bağlantısı doğrulanamadı: {error}",
         "lavalink_unavailable": {
           "title": "❌ Lavalink kullanılamıyor",
-          "description": "Ses sunucusu şu anda yanıt vermiyor. Birazdan tekrar deneyin."
+          "description": "Ses sunucusu şu anda yanıt vermiyor. Birazdan tekrar deneyin.\n\nBu YouTube kaynaklı bir IP engeli olabilir. Endişelenme! Kennyy bunu hallediyor ve her saat IP değiştiriyor."
         },
         "connect_voice": "Ses kanalına bağlanılamadı: {error}",
         "search_failure": "Arama sırasında bir şeyler yanlış gitti: {error}",
@@ -155,7 +165,7 @@
         },
         "playlist_start": "Oynatma listesi başlatılamıyor: {error}",
         "play_start": "Oynatma başlatılamıyor: {error}",
-        "process_failure": "Parça işlenirken bir sorun oluştu: {error}"
+        "process_failure": "Parça işlenirken bir sorun oluştu: {error}\n\nBu YouTube kaynaklı bir IP engeli olabilir. Endişelenme! Kennyy bunu hallediyor ve her saat IP değiştiriyor."
       },
       "playlist": {
         "added": {
@@ -620,25 +630,6 @@
     },
     "lavalink": {
       "details": "Node: {node}"
-    }
-  },
-  "player": {
-    "queue_finished": {
-      "title": "Sıra Bitti!",
-      "description": "Şu anlık işim bitti ama ne zaman istersen tekrar çağırabilirsin!"
-    },
-    "track_failed": {
-      "title": "❌ Oynatılamadı!",
-      "description": "**{track}** adlı parçayı çalamıyorum.\nSebep: {reason}",
-      "fallback_reason": "Bilinmeyen sebep (Tamamen ya da bölgesel olarak engellenmiş olabilir.).",
-      "footer": "Bu parçayı atlayıp devam ediyorum.",
-      "unknown_track": "Bilinmeyen parça",
-      "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**"
-    },
-    "lonely": {
-      "pause": "{call} içinde yalnız kaldım. Birisi dönene kadar 2 dakika boyunca kuyruğu duraklatıyorum. Aksi takdirde bağlantıyı keseceğim!",
-      "resume": "Birisi {call} kanalına katıldı! Oynatmaya devam ediyorum.",
-      "disconnect": "Kimse {call} kanalına geri dönmedi. Şimdi bağlantıyı kesiyorum."
     }
   }
 }
