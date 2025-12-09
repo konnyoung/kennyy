@@ -59,15 +59,18 @@ class MusicBot(commands.Bot):
         self.language_collection = None
         self.presence_collection = None
         self.logs_collection = None
+        self.warp_collection = None
         self._mongo_connected = False
         self._alone_tasks: dict[int, asyncio.Task] = {}
         self.owner_ids: set[int] = self._load_owner_ids()
         self.logger = None
+        self.enable_warp_reconnect: bool = True
 
         if not self.owner_ids:
             print("Aviso: BOT_OWNER_IDS não definidos. Comandos de administrador do bot ficarão indisponíveis.")
 
         self._init_mongo()
+        self.enable_warp_reconnect = self._load_warp_setting()
         self._load_locales()
         self._init_logger()
 
@@ -104,6 +107,7 @@ class MusicBot(commands.Bot):
             self.language_collection.create_index("guild_id", unique=True)
             self.presence_collection = self.mongo_db["bot_presence"]
             self.logs_collection = self.mongo_db["logs_settings"]
+            self.warp_collection = self.mongo_db["warp_settings"]
             self._mongo_connected = True
             print("MongoDB conectado com sucesso. Preferências de idioma e presença ativadas!")
         except pymongo_errors.OperationFailure as exc:
@@ -1145,6 +1149,9 @@ class MusicBot(commands.Bot):
                 )
             )
             if self._should_reconnect_warp(track_title, severity, message):
+                player._warp_retry_pending = True
+                player._warp_retry_track = payload.track
+                player._warp_retry_attempted = False
                 existing = getattr(player, "_warp_retry_future", None)
                 if not existing or existing.done():
                     player._warp_retry_future = asyncio.create_task(
@@ -1173,6 +1180,8 @@ class MusicBot(commands.Bot):
 
     def _should_reconnect_warp(self, track_title: str | None, severity: Any, message: Any) -> bool:
         """Confere se o erro atual deve disparar o script de reconexao do WARP."""
+        if not getattr(self, "enable_warp_reconnect", True):
+            return False
         if not sys.platform.startswith("linux"):
             return False
 
@@ -1190,6 +1199,10 @@ class MusicBot(commands.Bot):
             track = getattr(player, "current", None)
         if track is None:
             return False
+
+        player._warp_retry_pending = True
+        player._warp_retry_track = track
+        player._warp_retry_attempted = False
 
         guild = getattr(player, "guild", None)
         guild_id = getattr(guild, "id", None)
@@ -1227,6 +1240,9 @@ class MusicBot(commands.Bot):
         try:
             player._warp_retry_inflight = True
             await self._run_warp_reconnect_script()
+            connected = await self.ensure_lavalink_connected()
+            if not connected:
+                return False
             try:
                 await asyncio.sleep(5)
             except asyncio.CancelledError:
@@ -1235,6 +1251,9 @@ class MusicBot(commands.Bot):
             await player.play(track)
             loop_mode = self._get_loop_mode(player)
             self._apply_loop_mode(player, loop_mode)
+            player._warp_retry_pending = False
+            player._warp_retry_attempted = False
+            player._warp_retry_track = None
             return True
         except Exception as exc:
             print(f"Falha no fluxo de retry WARP: {exc}")
@@ -1286,10 +1305,18 @@ class MusicBot(commands.Bot):
         except asyncio.CancelledError:
             return False
 
+        connected = await self.ensure_lavalink_connected()
+        if not connected:
+            print("Lavalink ainda desconectado apos tentativa de WARP.")
+            return False
+
         try:
             await player.play(track)
             loop_mode = self._get_loop_mode(player)
             self._apply_loop_mode(player, loop_mode)
+            player._warp_retry_pending = False
+            player._warp_retry_attempted = False
+            player._warp_retry_track = None
             return True
         except Exception as exc:
             print(f"Nao foi possivel re-tentar a faixa apos reconexao WARP: {exc}")
@@ -2049,6 +2076,38 @@ class MusicBot(commands.Bot):
         minutes = seconds // 60
         seconds = seconds % 60
         return f"{minutes:02d}:{seconds:02d}"
+
+    def _load_warp_setting(self) -> bool:
+        """Carrega flag de auto-reconnect do WARP do MongoDB (padrão: True)."""
+        if not self._mongo_connected or self.warp_collection is None:
+            return True
+
+        try:
+            doc = self.warp_collection.find_one({"_id": "warp_reconnect"})
+            if not doc:
+                return True
+            value = doc.get("enabled")
+            return bool(value) if value is not None else True
+        except Exception as exc:
+            print(f"Falha ao carregar configuração de WARP do MongoDB: {exc}")
+            return True
+
+    def save_warp_setting(self, enabled: bool) -> bool:
+        """Salva flag de auto-reconnect do WARP no MongoDB."""
+        if not self._mongo_connected or self.warp_collection is None:
+            print("MongoDB não conectado. Não foi possível salvar configuração de WARP.")
+            return False
+
+        try:
+            self.warp_collection.update_one(
+                {"_id": "warp_reconnect"},
+                {"$set": {"enabled": bool(enabled)}},
+                upsert=True,
+            )
+            return True
+        except Exception as exc:
+            print(f"Falha ao salvar configuração de WARP no MongoDB: {exc}")
+            return False
 
     def _load_presence_config(self) -> dict:
         """Carrega configuração de presença do MongoDB."""
