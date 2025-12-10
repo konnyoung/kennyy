@@ -766,64 +766,15 @@ class QueueCommands(commands.Cog):
             )
             return await self._send_interaction_message(interaction, embed=embed, ephemeral=True)
 
-        embed = discord.Embed(
-            title=self._translate(
-                interaction,
-                "commands.queue.skipto.success.title",
-                default="Pulando para a música",
-            ),
-            description=self._translate(
-                interaction,
-                "commands.queue.skipto.success.description",
-                default="⏭️ Pulando para **{title}**",
-                title=target_track.title,
-            ),
-            color=0x00ff00,
+        success_message = self._translate(
+            interaction,
+            "commands.queue.skipto.success.description",
+            default="⏭️ Pulando para **{title}**",
+            title=target_track.title,
         )
 
-        embed.add_field(
-            name=self._translate(
-                interaction,
-                "commands.common.labels.title",
-                default="Título",
-            ),
-            value=target_track.title,
-            inline=True,
-        )
-
-        embed.add_field(
-            name=self._translate(
-                interaction,
-                "commands.common.labels.artist",
-                default="Artista",
-            ),
-            value=target_track.author or self._translate(
-                interaction,
-                "commands.common.labels.unknown_author",
-                default="Desconhecido",
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name=self._translate(
-                interaction,
-                "commands.common.labels.position",
-                default="Posição",
-            ),
-            value=str(position),
-            inline=True,
-        )
-
-        await self._send_interaction_message(interaction, embed=embed)
+        await self._send_interaction_message(interaction, content=success_message, ephemeral=True)
         await self._refresh_active_views(player)
-
-        bot = getattr(self, "bot", None)
-        if bot and hasattr(bot, "_apply_track_start_effects"):
-            try:
-                await bot._apply_track_start_effects(player, target_track)
-            except Exception as exc:
-                print(f"Falha ao aplicar efeitos de início após skipto: {exc}")
 
     @app_commands.command(name="clear", description="Clear all upcoming tracks from the queue")
     async def clear(self, interaction: discord.Interaction):
