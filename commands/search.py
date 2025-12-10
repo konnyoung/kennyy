@@ -523,7 +523,7 @@ class SearchDropdown(discord.ui.Select):
                     return
 
                 try:
-                    player = await voice_channel.connect(cls=wavelink.Player)
+                    player = await voice_channel.connect(cls=wavelink.Player, self_deaf=True, reconnect=True)
                 except Exception as e:
                     translator = getattr(self.bot, "translate", None)
                     message = f"❌ Erro ao conectar ao canal de voz: {e}"

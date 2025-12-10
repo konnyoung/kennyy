@@ -342,13 +342,13 @@ class AdminCommands(commands.Cog):
             try:
                 config = self.bot.logs_collection.find_one({"_id": "global"})
                 enabled = config.get("enabled", True) if config else True
-                
+
                 status_text = self._translate(
                     interaction,
                     "commands.admin.logs.status.enabled" if enabled else "commands.admin.logs.status.disabled",
                     default="habilitados" if enabled else "desabilitados",
                 )
-                
+
                 embed = discord.Embed(
                     title=self._translate(
                         interaction,
@@ -363,9 +363,9 @@ class AdminCommands(commands.Cog):
                     ),
                     color=0x3498db
                 )
-                
+
                 # Verifica se o canal de logs está configurado
-                log_channel_id = os.getenv("LOG_CHANNEL_ID", "").strip()
+                log_channel_id = os.getenv("LOG_CHANNEL_ID", "")
                 if log_channel_id and log_channel_id.isdigit():
                     embed.add_field(
                         name=self._translate(
@@ -390,7 +390,7 @@ class AdminCommands(commands.Cog):
                         ),
                         inline=False
                     )
-                
+
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             except Exception as exc:
                 error_message = self._translate(
@@ -466,6 +466,81 @@ class AdminCommands(commands.Cog):
                     error=str(exc),
                 )
                 await interaction.response.send_message(error_message, ephemeral=True)
+
+    @admin.command(name="warp", description="Enable or disable WARP auto-reconnect (owners only)")
+    @app_commands.describe(action="Enable, disable or show status of WARP auto-reconnect")
+    @app_commands.choices(action=[
+        app_commands.Choice(name="Enable", value="enable"),
+        app_commands.Choice(name="Disable", value="disable"),
+        app_commands.Choice(name="Status", value="status"),
+    ])
+    @app_commands.check(is_admin)
+    async def warp_toggle(
+        self,
+        interaction: discord.Interaction,
+        action: app_commands.Choice[str],
+    ):
+        action_value = action.value
+        current = getattr(self.bot, "enable_warp_reconnect", True)
+
+        if action_value == "status":
+            status_label = self._translate(
+                interaction,
+                "commands.admin.warp.status.enabled" if current else "commands.admin.warp.status.disabled",
+                default="enabled" if current else "disabled",
+            )
+            embed = discord.Embed(
+                title=self._translate(
+                    interaction,
+                    "commands.admin.warp.status.title",
+                    default="WARP auto-reconnect",
+                ),
+                description=self._translate(
+                    interaction,
+                    "commands.admin.warp.status.description",
+                    default=f"WARP auto-reconnect is currently **{status_label}**.",
+                    status=status_label,
+                ),
+                color=0x3498db,
+            )
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        if action_value == "enable":
+            self.bot.enable_warp_reconnect = True
+            title_key = "commands.admin.warp.enable.title"
+            desc_key = "commands.admin.warp.enable.description"
+            default_title = "✅ WARP auto-reconnect enabled"
+            default_desc = "The bot will run warp-cli on specific faults and retry after 5s."
+            color = 0x57F287
+        else:
+            self.bot.enable_warp_reconnect = False
+            title_key = "commands.admin.warp.disable.title"
+            desc_key = "commands.admin.warp.disable.description"
+            default_title = "🚫 WARP auto-reconnect disabled"
+            default_desc = "The bot will no longer run warp-cli or retry on that fault."
+            color = 0xED4245
+
+        persisted = False
+        saver = getattr(self.bot, "save_warp_setting", None)
+        if callable(saver):
+            persisted = saver(self.bot.enable_warp_reconnect)
+
+        embed = discord.Embed(
+            title=self._translate(
+                interaction,
+                title_key,
+                default=default_title,
+            ),
+            description=self._translate(
+                interaction,
+                desc_key,
+                default=default_desc,
+            ),
+            color=color,
+        )
+        if not persisted:
+            embed.set_footer(text="Preferência não persistida no MongoDB (modo apenas em memória).")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot):
