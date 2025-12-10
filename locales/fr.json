@@ -34,8 +34,24 @@
       "fallback_playing": "⚠️ Je n'ai pas pu lire **{original}** (connexion requise). Lecture d'une alternative : **{fallback}**"
     },
     "track_retry": {
-      "title": "Reconnexion audio",
-      "pending": "Je fais quelques petits ajustements pour lire ta musique... Nouvel essai dans 5s."
+      "title": "<:youtube:1446621413179002991> Récupération des infos de la vidéo",
+      "pending": "Pas de panique ! J'ai juste besoin de quelques infos supplémentaires du serveur pour continuer la lecture. Ça prend environ 5 secondes !"
+    },
+    "warp": {
+      "enable": {
+        "title": "✅ Reconnexion WARP activée",
+        "description": "Le bot exécutera warp-cli sur cette faute spécifique et réessaiera après 5s."
+      },
+      "disable": {
+        "title": "🚫 Reconnexion WARP désactivée",
+        "description": "Le bot n'exécutera plus warp-cli ni ne réessaiera pour cette faute."
+      },
+      "status": {
+        "title": "Reconnexion WARP",
+        "description": "La reconnexion WARP est actuellement **{status}**.",
+        "enabled": "activée",
+        "disabled": "désactivée"
+      }
     },
     "lonely": {
       "pause": "Je me retrouve seul dans {call}. Je mets la file en pause pendant 2 minutes en attendant que quelqu'un revienne. Sinon, je me déconnecterai !",

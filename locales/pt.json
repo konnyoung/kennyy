@@ -34,8 +34,24 @@
       "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). Tocando uma alternativa: **{fallback}**"
     },
     "track_retry": {
-      "title": "Reconectando o áudio",
-      "pending": "Estou fazendo alguns ajustezinhos para tocar sua música... Tentando novamente em 5s."
+      "title": "<:youtube:1446621413179002991> Baixando informações do vídeo",
+      "pending": "Relaxa! Só preciso de mais algumas informações do servidor para continuar tocando. Isso vai demorar uns 5 segundos!"
+    },
+    "warp": {
+      "enable": {
+        "title": "✅ Reconexão WARP ativada",
+        "description": "O bot vai rodar o warp-cli nesse erro específico e tentar de novo após 5s."
+      },
+      "disable": {
+        "title": "🚫 Reconexão WARP desativada",
+        "description": "O bot não vai mais rodar warp-cli nem tentar de novo nesse erro."
+      },
+      "status": {
+        "title": "Reconexão WARP",
+        "description": "A reconexão WARP está **{status}**.",
+        "enabled": "ativada",
+        "disabled": "desativada"
+      }
     },
     "lonely": {
       "pause": "Fiquei sozinho em {call}. Irei pausar a fila por 2 minutos até alguém retornar. Caso contrário, irei me desconectar!",

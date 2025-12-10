@@ -34,7 +34,24 @@
       "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**"
     },
     "track_retry": {
-      "pending": "Müziğini çalmak için ufak ayarlar yapıyorum... 5sn içinde tekrar deneyeceğim."
+      "title": "<:youtube:1446621413179002991> Video bilgileri indiriliyor",
+      "pending": "Sakin ol! Çalmaya devam edebilmem için sunucudan birkaç bilgi daha almam gerekiyor. Bu yaklaşık 5 saniye sürecek!"
+    },
+    "warp": {
+      "enable": {
+        "title": "✅ WARP otomatik yeniden bağlanma açıldı",
+        "description": "Belirli hatada warp-cli çalışacak ve 5sn sonra tekrar deneyecek."
+      },
+      "disable": {
+        "title": "🚫 WARP otomatik yeniden bağlanma kapatıldı",
+        "description": "Bu hatada warp-cli çalışmayacak ve tekrar denemeyecek."
+      },
+      "status": {
+        "title": "WARP otomatik yeniden bağlanma",
+        "description": "WARP otomatik yeniden bağlanma şu anda **{status}**.",
+        "enabled": "açık",
+        "disabled": "kapalı"
+      }
     },
     "lonely": {
       "pause": "{call} içinde yalnız kaldım. Birisi dönene kadar 2 dakika boyunca kuyruğu duraklatıyorum. Aksi takdirde bağlantıyı keseceğim!",

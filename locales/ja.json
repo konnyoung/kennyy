@@ -34,7 +34,24 @@
       "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します"
     },
     "track_retry": {
-      "pending": "音楽を流すために少し調整しています… 5秒後にもう一度試します。"
+      "title": "<:youtube:1446621413179002991> 動画情報を取得中",
+      "pending": "ちょっと待ってね！再生を続けるためにサーバーからもう少し情報を取得します。5秒ほどかかります！"
+    },
+    "warp": {
+      "enable": {
+        "title": "✅ WARP 自動再接続を有効化",
+        "description": "特定の障害で warp-cli を実行し、5秒後に再試行します。"
+      },
+      "disable": {
+        "title": "🚫 WARP 自動再接続を無効化",
+        "description": "この障害で warp-cli を実行せず、再試行もしません。"
+      },
+      "status": {
+        "title": "WARP 自動再接続",
+        "description": "WARP 自動再接続は現在 **{status}** です。",
+        "enabled": "有効",
+        "disabled": "無効"
+      }
     },
     "lonely": {
       "pause": "{call} に1人だけになったので、2分間キューを一時停止します。誰も戻らなければ切断します。",
