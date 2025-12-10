@@ -1148,7 +1148,7 @@ class MusicBot(commands.Bot):
                     cause or "?",
                 )
             )
-            if self._should_reconnect_warp(track_title, severity, message, cause):
+            if self._should_reconnect_warp(track_title, severity, message):
                 player._warp_retry_pending = True
                 player._warp_retry_track = payload.track
                 player._warp_retry_attempted = False
@@ -1178,7 +1178,7 @@ class MusicBot(commands.Bot):
         else:
             player._last_error = None
 
-    def _should_reconnect_warp(self, track_title: str | None, severity: Any, message: Any, cause: Any = None) -> bool:
+    def _should_reconnect_warp(self, track_title: str | None, severity: Any, message: Any) -> bool:
         """Confere se o erro atual deve disparar o script de reconexao do WARP."""
         if not getattr(self, "enable_warp_reconnect", True):
             return False
@@ -1189,16 +1189,6 @@ class MusicBot(commands.Bot):
             return False
 
         if not message or str(message).strip() != "Something broke when playing the track.":
-            return False
-
-        cause_str = str(cause).strip() if cause is not None else ""
-        if not cause_str:
-            return False
-
-        if "dev.lavalink.youtube.cipher.ScriptExtractionException" not in cause_str:
-            return False
-
-        if "ScriptExtractionException: Must find sig function from script" not in cause_str:
             return False
 
         return True
@@ -1733,13 +1723,6 @@ class MusicBot(commands.Bot):
     ) -> None:
         if not track:
             return
-
-        # Evita embeds duplicados do mesmo track quando eventos repetidos chegam
-        track_id = (
-            getattr(track, "track", None)
-            or getattr(track, "identifier", None)
-            or getattr(track, "id", None)
-        )
 
         channel = getattr(player, "text_channel", None)
         if channel is None:
