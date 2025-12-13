@@ -529,7 +529,6 @@ class QueueControlView(discord.ui.View):
 
     @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.secondary, custom_id="queue_refresh")
     async def refresh_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
         await self._edit_with_latest(interaction)
 
     @discord.ui.button(emoji="◀️", style=discord.ButtonStyle.secondary, custom_id="queue_prev_page", row=1)

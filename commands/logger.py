@@ -397,6 +397,9 @@ class BotLogger:
             server_value = unknown_text
         else:
             server_value = guild_name or unknown_text
+            # Adiciona o ID do servidor entre parênteses
+            if guild_id:
+                server_value = f"{server_value} ({guild_id})"
         embed.add_field(name=server_label, value=server_value, inline=True)
 
         channel_label = self._translate(

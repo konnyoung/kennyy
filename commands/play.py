@@ -666,7 +666,7 @@ class PlayCommands(commands.Cog):
 
     def _strip_search_prefix(self, query: str) -> str:
         """Remove prefixos yt/ytm/scsearch duplicados para evitar consultas inválidas."""
-        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:", "spsearch:")
+        prefixes = ("ytsearch:", "ytmsearch:", "scsearch:", "spsearch:", "dzsearch:", "amsearch:")
         for prefix in prefixes:
             if query.lower().startswith(prefix):
                 return query[len(prefix):]
@@ -725,7 +725,7 @@ class PlayCommands(commands.Cog):
 
         attempts: list[str]
         clean_query = self._strip_search_prefix(query)
-        provider_effective = provider or "ytmusic"  # padrão agora é YouTube Music
+        provider_effective = provider or "spotify"  # padrão: Spotify
         user_selected_provider = provider is not None
         if is_url:
             attempts = [query]
@@ -748,10 +748,20 @@ class PlayCommands(commands.Cog):
                     f"scsearch:{clean_query}",
                     f"scsearch:{quoted}",
                 ]
+            elif provider_effective == "deezer":
+                attempts = [
+                    f"dzsearch:{clean_query}",
+                    f"dzsearch:{quoted}",
+                ]
             elif provider_effective == "spotify":
                 attempts = [
                     f"spsearch:{clean_query}",
                     f"spsearch:{quoted}",
+                ]
+            elif provider_effective == "applemusic":
+                attempts = [
+                    f"amsearch:{clean_query}",
+                    f"amsearch:{quoted}",
                 ]
             else:
                 attempts = [
@@ -768,6 +778,12 @@ class PlayCommands(commands.Cog):
                 ]
 
             default_attempts = [
+                f"spsearch:{clean_query}",
+                f"spsearch:{quoted}",
+                f"dzsearch:{clean_query}",
+                f"dzsearch:{quoted}",
+                f"amsearch:{clean_query}",
+                f"amsearch:{quoted}",
                 f"ytmsearch:{clean_query}",
                 f"ytmsearch:{quoted}",
                 f"ytmsearch:{clean_query} audio",
@@ -776,8 +792,6 @@ class PlayCommands(commands.Cog):
                 f"ytsearch:{clean_query} audio",
                 f"scsearch:{clean_query}",
                 f"scsearch:{quoted}",
-                f"spsearch:{clean_query}",
-                f"spsearch:{quoted}",
             ]
 
         if max_attempts is not None:
@@ -792,146 +806,7 @@ class PlayCommands(commands.Cog):
         fallback_attempts = default_attempts if max_attempts is None else default_attempts[:max_attempts]
         return await _run_attempts(fallback_attempts)
 
-    async def search_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        """Função de autocomplete para buscar músicas"""
-        if not current or len(current) < 2:
-            return await self._send_autocomplete_choices(
-                interaction,
-                [
-                    app_commands.Choice(
-                        name=self._translate(interaction, "commands.play.autocomplete.prompt"),
-                        value="",
-                    )
-                ],
-            )
 
-        # Se for uma URL, não mostra sugestões
-        if self.is_url(current):
-            return await self._send_autocomplete_choices(
-                interaction,
-                [
-                    app_commands.Choice(
-                        name=self._translate(
-                            interaction,
-                            "commands.play.autocomplete.url_detected",
-                            value=current[:50],
-                        ),
-                        value=current,
-                    )
-                ],
-            )
-
-        is_url = self.is_url(current)
-        try:
-            tracks = await self._search_with_fallback(
-                interaction,
-                current,
-                is_url=is_url,
-                timeout=AUTOCOMPLETE_TIMEOUT_SECONDS,
-                max_attempts=2 if not is_url else None,
-            )
-        except asyncio.TimeoutError:
-            return await self._send_autocomplete_choices(
-                interaction,
-                [
-                    app_commands.Choice(
-                        name=self._translate(interaction, "commands.play.autocomplete.timeout"),
-                        value=current,
-                    )
-                ],
-            )
-        except Exception as e:
-            print(f"Erro no autocomplete: {e}")
-            return await self._send_autocomplete_choices(
-                interaction,
-                [
-                    app_commands.Choice(
-                        name=self._translate(
-                            interaction,
-                            "commands.play.autocomplete.error_choice",
-                            value=current,
-                        ),
-                        value=current,
-                    )
-                ],
-            )
-
-        if tracks is None:
-            return await self._send_autocomplete_choices(
-                interaction,
-                [
-                    app_commands.Choice(
-                        name=self._translate(interaction, "commands.play.autocomplete.no_results"),
-                        value=current,
-                    )
-                ],
-            )
-
-        if isinstance(tracks, wavelink.Playlist):
-            tracks = tracks.tracks
-
-        playable_cls = getattr(wavelink, "Playable", None)
-        if playable_cls and isinstance(tracks, playable_cls):
-            tracks = [tracks]
-
-        if not isinstance(tracks, list):
-            try:
-                tracks = list(tracks)
-            except TypeError:
-                tracks = []
-
-        if not tracks:
-            return await self._send_autocomplete_choices(
-                interaction,
-                [
-                    app_commands.Choice(
-                        name=self._translate(interaction, "commands.play.autocomplete.no_results"),
-                        value=current,
-                    )
-                ],
-            )
-
-        # Ordena pelos melhores match para priorizar sugestões relevantes
-        try:
-            tracks = sorted(tracks, key=lambda t: self._score_track_match(current, t), reverse=True)
-        except Exception:
-            pass
-
-        # Cria lista de sugestões (máximo 25 por limitação do Discord)
-        choices: list[app_commands.Choice[str]] = []
-        for track in tracks[:25]:
-            track_length = getattr(track, "length", None)
-            duration = self.format_time_from_ms(track_length) if track_length else "N/A"
-            author_value = getattr(track, "author", None)
-            title_value = getattr(track, "title", None)
-
-            author = (
-                author_value[:30]
-                if author_value
-                else self._translate(interaction, "commands.common.labels.unknown_author")
-            )
-            title = (
-                title_value[:50]
-                if title_value
-                else self._translate(interaction, "commands.play.autocomplete.unknown_title")
-            )
-
-            display_name = f"🎵 {title} - {author} ({duration})"
-            if len(display_name) > 100:
-                display_name = display_name[:97] + "..."
-
-            choice_value = getattr(track, "uri", None) or getattr(track, "url", None) or title_value or current
-            choices.append(app_commands.Choice(name=display_name, value=choice_value))
-
-        if not choices:
-            choices = [
-                app_commands.Choice(
-                    name=self._translate(interaction, "commands.play.autocomplete.no_results"),
-                    value=current,
-                )
-            ]
-
-        return await self._send_autocomplete_choices(interaction, choices)
 
     def format_time_from_ms(self, milliseconds):
         """Formata tempo de milissegundos para MM:SS"""
@@ -975,6 +850,13 @@ class PlayCommands(commands.Cog):
     async def _cleanup_failed_voice_connection(self, guild: discord.Guild | None) -> None:
         if guild is None:
             return
+
+        # Limpeza é um reset de sessão: não manter afinidade de node.
+        try:
+            if hasattr(self.bot, "_clear_session_node_affinity"):
+                self.bot._clear_session_node_affinity(getattr(guild, "id", None))
+        except Exception:
+            pass
 
         processed: set[int] = set()
 
@@ -1027,21 +909,66 @@ class PlayCommands(commands.Cog):
         error: Exception,
         attempt: int,
         max_attempts: int,
+        attempted_node_id: str | None = None,
     ) -> None:
         guild = interaction.guild
         channel_name = getattr(channel, "name", str(getattr(channel, "id", "?")))
+        error_msg = str(error).lower()
+        
         print(
             f"Falha ao conectar ao canal de voz '{channel_name}' (tentativa {attempt}/{max_attempts}): {error}"
         )
 
         await self._cleanup_failed_voice_connection(guild)
 
-        try:
-            await self.bot.ensure_lavalink_connected()
-        except Exception as ensure_exc:
-            print(f"Erro ao validar Lavalink após falha de voz: {ensure_exc}")
-
-        await asyncio.sleep(1)
+        # Se for timeout, reconecta apenas o node que foi usado na tentativa
+        if "timeout" in error_msg and ("5" in error_msg or "5.0" in error_msg or "15" in error_msg or "15.0" in error_msg or "30" in error_msg or "30.0" in error_msg):
+            if attempted_node_id:
+                print(f"⚠️ Timeout detectado - reconectando node usado: {attempted_node_id}")
+                
+                # Verifica se há outros nodes disponíveis ANTES de reconectar
+                other_nodes_available = any(
+                    node.status == wavelink.NodeStatus.CONNECTED
+                    for node in wavelink.Pool.nodes.values()
+                    if getattr(node, "identifier", None) != attempted_node_id
+                )
+                
+                if other_nodes_available:
+                    print(f"ℹ️ Outros nodes estão disponíveis. Próxima tentativa usará node alternativo.")
+                    # Apenas marca o node como falho, sem tentar reconectar agora
+                    try:
+                        await self.bot.mark_node_as_failed(attempted_node_id)
+                    except Exception as mark_exc:
+                        print(f"⚠️ Erro ao marcar node como falho: {mark_exc}")
+                else:
+                    print(f"⚠️ Nenhum outro node disponível. Tentando reconectar {attempted_node_id}...")
+                    # Só tenta reconectar se não houver alternativas
+                    try:
+                        reconnected = await self.bot.reconnect_specific_node(attempted_node_id)
+                        if not reconnected:
+                            print(f"❌ Falha ao reconectar node {attempted_node_id}.")
+                    except Exception as reconnect_exc:
+                        print(f"❌ Erro ao reconectar node {attempted_node_id}: {reconnect_exc}")
+            else:
+                print("⚠️ Timeout detectado mas node usado é desconhecido - validando todos...")
+                try:
+                    await self.bot.ensure_lavalink_connected()
+                except Exception as ensure_exc:
+                    pass
+            
+            # Aguarda menos tempo se houver outros nodes disponíveis
+            if other_nodes_available if attempted_node_id else False:
+                await asyncio.sleep(0.5)
+            else:
+                await asyncio.sleep(2)
+        else:
+            # Apenas valida conexão normalmente para outros erros
+            try:
+                await self.bot.ensure_lavalink_connected()
+            except Exception as ensure_exc:
+                print(f"Erro ao validar Lavalink após falha de voz: {ensure_exc}")
+            
+            await asyncio.sleep(1)
 
     async def _connect_player_with_retry(
         self,
@@ -1056,17 +983,144 @@ class PlayCommands(commands.Cog):
             await self.bot.ensure_lavalink_connected()
         except Exception as ensure_exc:
             print(f"Falha ao validar nós Lavalink antes de conectar: {ensure_exc}")
+        
+        # Verifica se há pelo menos um node realmente disponível
+        available_nodes = [
+            node for node in wavelink.Pool.nodes.values()
+            if node.status == wavelink.NodeStatus.CONNECTED
+        ]
+        
+        if not available_nodes:
+            raise RuntimeError("Nenhum node Lavalink disponível para conexão")
+        
+        print(f"ℹ️ {len(available_nodes)} node(s) disponível(is) para conexão")
 
+        excluded_nodes = set()  # Nodes que falharam e devem ser evitados nos retries
+        
         for attempt in range(1, attempts + 1):
+            attempted_node_id = None
+            
             try:
-                player = await channel.connect(cls=wavelink.Player, self_deaf=True, reconnect=True)
+                preferred_node_id = None
+                # Só usa afinidade na primeira tentativa; em retry, permite qualquer node disponível
+                if attempt == 1:
+                    try:
+                        if interaction.guild is not None:
+                            preferred_node_id = getattr(self.bot, "_session_node_affinity", {}).get(interaction.guild.id)
+                    except Exception:
+                        preferred_node_id = None
+
+                preferred_node = None
+                if preferred_node_id and preferred_node_id not in excluded_nodes:
+                    try:
+                        preferred_node = wavelink.Pool.get_node(preferred_node_id)
+                        if preferred_node.status != wavelink.NodeStatus.CONNECTED:
+                            preferred_node = None
+                    except Exception:
+                        preferred_node = None
+
+                connect_timeout = 6.0
+
+                if preferred_node is not None:
+                    def _player_factory(client: discord.Client, ch: discord.abc.Connectable):
+                        return wavelink.Player(client, ch, nodes=[preferred_node])
+
+                    player = await channel.connect(cls=_player_factory, self_deaf=True, reconnect=True, timeout=connect_timeout)
+                else:
+                    # Em retries, filtra nodes que falharam
+                    if excluded_nodes and attempt > 1:
+                        remaining_nodes = [
+                            n for n in wavelink.Pool.nodes.values()
+                            if n.status == wavelink.NodeStatus.CONNECTED and n.identifier not in excluded_nodes
+                        ]
+                        if remaining_nodes:
+                            def _player_factory_retry(client: discord.Client, ch: discord.abc.Connectable):
+                                return wavelink.Player(client, ch, nodes=remaining_nodes)
+                            print(f"🔄 Retry {attempt}/{attempts}: usando {len(remaining_nodes)} node(s) alternativos (excluindo: {', '.join(excluded_nodes)})")
+                            player = await channel.connect(cls=_player_factory_retry, self_deaf=True, reconnect=True, timeout=connect_timeout)
+                        else:
+                            print(f"⚠️ Nenhum node alternativo disponível para retry {attempt}/{attempts}")
+                            player = await channel.connect(cls=wavelink.Player, self_deaf=True, reconnect=True, timeout=connect_timeout)
+                    else:
+                        player = await channel.connect(cls=wavelink.Player, self_deaf=True, reconnect=True, timeout=connect_timeout)
+                
+                # Após conexão bem-sucedida, identifica qual node foi usado
+                try:
+                    node = getattr(player, "node", None)
+                    if node:
+                        attempted_node_id = getattr(node, "identifier", None)
+                        player_count = len(node.players) if node else 0
+                        print(f"✅ Conectado no node: {attempted_node_id} ({player_count} player(s) ativo(s))")
+                except Exception:
+                    pass
+                    
             except (
                 wavelink.ChannelTimeoutException,
                 wavelink.InvalidChannelStateException,
                 asyncio.TimeoutError,
             ) as exc:
                 last_error = exc
-                await self._handle_voice_connect_issue(interaction, channel, exc, attempt, attempts)
+                
+                # Tenta identificar qual node causou o timeout através do voice_client parcial
+                try:
+                    guild = interaction.guild
+                    voice_client = guild.voice_client if guild else None
+                    if voice_client and hasattr(voice_client, "node"):
+                        node = getattr(voice_client, "node", None)
+                        if node:
+                            attempted_node_id = getattr(node, "identifier", None)
+                            print(f"🎯 Timeout no node: {attempted_node_id}")
+                except Exception:
+                    pass
+                
+                # Se não conseguiu identificar, assume o primeiro node como padrão
+                if not attempted_node_id and self.bot._lavalink_cfgs:
+                    attempted_node_id = self.bot._lavalink_cfgs[0]["id"]
+                    print(f"⚠️ Node usado não identificado, assumindo padrão: {attempted_node_id}")
+                
+                # Adiciona o node à lista de exclusão para evitar nas próximas tentativas
+                if attempted_node_id:
+                    excluded_nodes.add(attempted_node_id)
+                    print(f"⚠️ Node '{attempted_node_id}' adicionado à lista de exclusão (falha detectada)")
+                
+                # Limpa afinidade do node problemático para tentar outro na próxima vez
+                if attempted_node_id and interaction.guild:
+                    try:
+                        affinity = getattr(self.bot, "_session_node_affinity", {})
+                        if affinity.get(interaction.guild.id) == attempted_node_id:
+                            affinity.pop(interaction.guild.id, None)
+                            print(f"🔄 Removida afinidade com node '{attempted_node_id}' para permitir failover")
+                    except Exception:
+                        pass
+                
+                # Marca o node como falho e aguarda remoção do pool
+                if attempted_node_id:
+                    try:
+                        await self.bot.mark_node_as_failed(attempted_node_id)
+                        # Aguarda um momento para o node ser realmente removido do pool
+                        await asyncio.sleep(0.5)
+                    except Exception as mark_exc:
+                        print(f"⚠️ Erro ao marcar node como falho: {mark_exc}")
+                
+                # Tenta reconectar o node problemático
+                await self._handle_voice_connect_issue(interaction, channel, exc, attempt, attempts, attempted_node_id)
+                
+                # Se ainda houver tentativas, verifica se há outros nodes disponíveis
+                if attempt < attempts:
+                    try:
+                        # Conta quantos nodes estão conectados
+                        connected_nodes = sum(
+                            1 for node in wavelink.Pool.nodes.values()
+                            if node.status == wavelink.NodeStatus.CONNECTED
+                        )
+                        
+                        if connected_nodes == 0:
+                            print(f"⚠️ Nenhum node disponível para nova tentativa (tentativa {attempt + 1}/{attempts})")
+                        else:
+                            print(f"🔄 Tentando novamente com nodes disponíveis ({connected_nodes} online)...")
+                    except Exception:
+                        pass
+                
                 continue
             except discord.ClientException as exc:
                 last_error = exc
@@ -1077,6 +1131,15 @@ class PlayCommands(commands.Cog):
                 last_error = exc
                 break
             else:
+                # Marca o player com a session_id atual do nó para rastreamento
+                try:
+                    node = getattr(player, "node", None)
+                    if node:
+                        session_id = getattr(node, "session_id", None)
+                        if session_id:
+                            player._session_id = session_id
+                except Exception:
+                    pass
                 return player  # Conectou com sucesso
 
         if last_error is not None:
@@ -1130,8 +1193,6 @@ class PlayCommands(commands.Cog):
             await self._force_destroy_remote_player(guild_id)
         except Exception as destroy_exc:
             print(f"Falha ao remover player remoto antes de reconstruir: {destroy_exc}")
-
-        await asyncio.sleep(0.2)
 
         new_player = await self._connect_player_with_retry(interaction, channel)
         new_player.queue.mode = loop_mode
@@ -1189,20 +1250,34 @@ class PlayCommands(commands.Cog):
             elif not player.connected:
                 needs_rebuild = True
             else:
-                try:
-                    info = await node.fetch_player_info(guild.id)
-                except wavelink.LavalinkException as exc:
-                    status = getattr(exc, "status", None)
-                    reason = str(getattr(exc, "error", "")).lower()
-                    if status in {401, 402, 403, 404, 410} or "session" in reason:
-                        info = None
-                    else:
-                        raise
-                except wavelink.NodeException:
-                    info = None
-
-                if info is None:
+                # Verifica se a sessão do player é válida comparando com a sessão atual do nó
+                player_session = getattr(player, "_session_id", None)
+                node_session = getattr(node, "session_id", None)
+                
+                # Se o player não tem session_id ou ela não bate com a do nó, precisa rebuild
+                if player_session is None or (node_session and player_session != node_session):
+                    print(f"⚠️ Player sem session válida (player: {player_session}, nó: {node_session}). Rebuild necessário.")
                     needs_rebuild = True
+                else:
+                    # Valida se o player ainda existe no servidor Lavalink
+                    try:
+                        info = await node.fetch_player_info(guild.id)
+                    except wavelink.LavalinkException as exc:
+                        status = getattr(exc, "status", None)
+                        reason = str(getattr(exc, "error", "")).lower()
+                        if status in {401, 402, 403, 404, 410} or "session" in reason:
+                            info = None
+                        else:
+                            raise
+                    except wavelink.NodeException:
+                        info = None
+                    except Exception as exc:
+                        # Qualquer outro erro ao validar - força rebuild
+                        print(f"⚠️ Erro ao validar player info: {exc}")
+                        info = None
+
+                    if info is None:
+                        needs_rebuild = True
 
             if needs_rebuild:
                 player = await self._rebuild_player(interaction, player, user_channel)
@@ -1273,18 +1348,19 @@ class PlayCommands(commands.Cog):
 
     @app_commands.command(name="play", description="Play a track or playlist")
     @app_commands.describe(
-        query="Song name, YouTube/Spotify URL, or search term",
-        service="Service to search (default: YouTube Music)",
+        query="Song name, YouTube/Spotify/Deezer/Apple Music URL, or search term",
+        service="Service to search (default: Spotify)",
     )
     @app_commands.choices(
         service=[
-            app_commands.Choice(name="YouTube (Default)", value="youtube"),
+            app_commands.Choice(name="Spotify (Default)", value="spotify"),
+            app_commands.Choice(name="Deezer", value="deezer"),
+            app_commands.Choice(name="Apple Music", value="applemusic"),
             app_commands.Choice(name="YouTube Music", value="ytmusic"),
+            app_commands.Choice(name="YouTube", value="youtube"),
             app_commands.Choice(name="SoundCloud", value="soundcloud"),
-            app_commands.Choice(name="Spotify", value="spotify"),
         ]
     )
-    @app_commands.autocomplete(query=search_autocomplete)
     async def play(
         self,
         interaction: discord.Interaction,
@@ -1292,19 +1368,21 @@ class PlayCommands(commands.Cog):
         service: app_commands.Choice[str] | None = None,
     ):
         """Comando para reproduzir música"""
-        try:
-            await interaction.response.defer()
-        except (discord.NotFound, discord.HTTPException):
-            pass
-
-        # Verifica se o usuário está em um canal de voz
+        # Verifica se o usuário está em um canal de voz ANTES de defer (mais rápido)
         if not interaction.user.voice:
             embed = self._error_embed(
                 interaction,
                 "commands.common.embeds.error_title",
                 "commands.play.errors.user_not_in_voice",
             )
-            return await interaction.followup.send(embed=embed)
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        # Defer somente após validação básica
+        try:
+            await interaction.response.defer()
+        except (discord.NotFound, discord.HTTPException) as e:
+            print(f"⚠️ Erro ao fazer defer: {e}")
+            pass
 
         try:
             lavalink_ok = await self.bot.ensure_lavalink_connected()
@@ -1357,9 +1435,31 @@ class PlayCommands(commands.Cog):
             
             return await interaction.followup.send(embed=embed)
 
+        # Conecta na call e busca a música em paralelo para reduzir latência total.
+        guild = interaction.guild
+        had_voice_client = bool(guild and isinstance(getattr(guild, "voice_client", None), wavelink.Player))
+
+        is_url = self.is_url(query)
+        provider = service.value if service else None
+
+        player_task = asyncio.create_task(self._ensure_active_player(interaction))
+        search_task = asyncio.create_task(
+            self._search_with_fallback(
+                interaction,
+                query,
+                is_url=is_url,
+                provider=provider,
+            )
+        )
+
         try:
-            player = await self._ensure_active_player(interaction)
+            player = await player_task
         except Exception as e:
+            try:
+                if not search_task.done():
+                    search_task.cancel()
+            except Exception:
+                pass
             embed = self._error_embed(
                 interaction,
                 "commands.common.embeds.error_title",
@@ -1368,24 +1468,25 @@ class PlayCommands(commands.Cog):
             )
             return await interaction.followup.send(embed=embed)
 
-        # Busca a música
-        is_url = self.is_url(query)
-        provider = service.value if service else None
         try:
-            tracks = await self._search_with_fallback(
-                interaction,
-                query,
-                is_url=is_url,
-                provider=provider,
-            )
+            tracks = await search_task
         except Exception as e:
+            # Se este comando acabou de conectar o bot (não havia voice_client),
+            # não deixa ele preso na call quando a busca falha.
+            if not had_voice_client:
+                try:
+                    if isinstance(player, wavelink.Player):
+                        await player.disconnect()
+                except Exception:
+                    pass
+
             embed = self._error_embed(
                 interaction,
                 "commands.common.embeds.error_title",
                 "commands.play.errors.search_failure",
                 error=e,
             )
-            
+
             # Envia log do erro
             if hasattr(self.bot, 'logger') and self.bot.logger:
                 try:
@@ -1401,7 +1502,7 @@ class PlayCommands(commands.Cog):
                     )
                 except Exception as log_exc:
                     print(f"Erro ao enviar log de falha de busca: {log_exc}")
-            
+
             return await interaction.followup.send(embed=embed)
 
         if not tracks:

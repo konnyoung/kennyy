@@ -924,9 +924,7 @@ class SearchCommands(commands.Cog):
     @app_commands.describe(query="Termo de busca ou URL para encontrar músicas")
     async def search(self, interaction: discord.Interaction, query: str):
         """Comando de busca com dropdown de seleção"""
-        await interaction.response.defer()
-
-        # Verifica se o usuário está em um canal de voz
+        # Verifica se o usuário está em um canal de voz ANTES de defer (mais rápido)
         if not interaction.user.voice:
             embed = discord.Embed(
                 title=self._translate(
@@ -941,7 +939,10 @@ class SearchCommands(commands.Cog):
                 ),
                 color=0xff0000
             )
-            return await interaction.followup.send(embed=embed)
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        # Defer somente após validação básica
+        await interaction.response.defer()
 
         try:
             # Realiza a busca com fallback multi-fonte

@@ -12,6 +12,12 @@ LANGUAGE_OPTIONS = {
     "en": {
         "emoji": "🇺🇸",
     },
+    "es": {
+        "emoji": "🇪🇸",
+    },
+    "it": {
+        "emoji": "🇮🇹",
+    },
     "fr": {
         "emoji": "🇫🇷",
     },
@@ -20,6 +26,9 @@ LANGUAGE_OPTIONS = {
     },
     "tr": {
         "emoji": "🇹🇷",
+    },
+    "ru": {
+        "emoji": "🇷🇺",
     },
 }
 
@@ -38,9 +47,12 @@ class LanguageCommands(commands.Cog):
             app_commands.Choice(name="🇧🇷 Português (Brasil)", value="pt"),
             app_commands.Choice(name="🇵🇹 Português (Portugal)", value="pt-pt"),
             app_commands.Choice(name="🇺🇸 English", value="en"),
+            app_commands.Choice(name="🇪🇸 Español", value="es"),
             app_commands.Choice(name="🇫🇷 Français", value="fr"),
+            app_commands.Choice(name="🇮🇹 Italiano", value="it"),
             app_commands.Choice(name="🇯🇵 日本語", value="ja"),
             app_commands.Choice(name="🇹🇷 Türkçe", value="tr"),
+            app_commands.Choice(name="🇷🇺 Русский", value="ru"),
         ]
     )
     async def language(
