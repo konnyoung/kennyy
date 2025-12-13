@@ -1,0 +1,698 @@
+{
+  "languages": {
+    "pt": {
+      "label": "Portoghese (Brasile)"
+    },
+    "pt-pt": {
+      "label": "Portoghese (Portogallo)"
+    },
+    "fr": {
+      "label": "Francese"
+    },
+    "en": {
+      "label": "Inglese"
+    },
+    "es": {
+      "label": "Spagnolo"
+    },
+    "it": {
+      "label": "Italiano"
+    },
+    "ja": {
+      "label": "Giapponese"
+    },
+    "tr": {
+      "label": "Turco"
+    },
+    "ru": {
+      "label": "Russo"
+    }
+  },
+  "player": {
+    "queue_finished": {
+      "title": "<:topgg:1446666109125394495> Per favore vota per me su Top.gg!",
+      "description": "Ti sta piacendo? Dai un voto ogni 12 ore e aiuta a mantenere il bot attivo [cliccando qui](https://top.gg/bot/920133124095098881)",
+      "footer": "Usa /play di nuovo quando vuoi"
+    },
+    "track_failed": {
+      "title": "❌ Impossibile riprodurre",
+      "description": "Non sono riuscito a riprodurre **{track}**.\nMotivo: {reason}",
+      "fallback_reason": "Motivo sconosciuto (potrebbe essere bloccato per regione o temporaneamente non disponibile).",
+      "footer": "Salterò questa traccia e continuerò.",
+      "unknown_track": "Traccia sconosciuta",
+      "fallback_playing": "⚠️ Non sono riuscito a riprodurre **{original}** (login richiesto). Riproduzione alternativa: **{fallback}**"
+    },
+    "track_retry": {
+      "title": "<:deezer:1448437794090520658> Download info traccia",
+      "pending": "Aspetta un momento! Ho bisogno di qualche informazione in più dal server per continuare la riproduzione. Richiederà circa 5 secondi!"
+    },
+    "warp": {
+      "enable": {
+        "title": "✅ Riconnessione automatica WARP attivata",
+        "description": "Il bot eseguirà warp-cli su quell'errore specifico e riproverà dopo 5s."
+      },
+      "disable": {
+        "title": "🚫 Riconnessione automatica WARP disattivata",
+        "description": "Il bot non eseguirà più warp-cli né riproverà su quell'errore."
+      },
+      "status": {
+        "title": "Riconnessione automatica WARP",
+        "description": "La riconnessione automatica WARP è attualmente **{status}**.",
+        "enabled": "attivata",
+        "disabled": "disattivata"
+      }
+    },
+    "lonely": {
+      "pause": "Sono rimasto solo in {call}. Metto in pausa la coda per 2 minuti finché qualcuno non ritorna. Altrimenti mi disconnetto!",
+      "resume": "Qualcuno si è unito a {call}! Riprendo la riproduzione.",
+      "disconnect": "Nessuno è tornato in {call}. Mi disconnetto ora."
+    }
+  },
+  "commands": {
+    "common": {
+      "embeds": {
+        "error_title": "❌ Errore"
+      },
+      "errors": {
+        "no_track": "❌ Non c'è nessuna traccia in riproduzione!",
+        "no_track_full": "Non c'è musica in riproduzione in questo momento.",
+        "bot_not_connected": "❌ Bot non connesso!",
+        "bot_not_connected_full": "Il bot non è connesso a un canale vocale.",
+        "user_not_in_voice": "Devi essere in un canale vocale!"
+      },
+      "labels": {
+        "artist": "Artista",
+        "duration": "Durata",
+        "position": "Posizione",
+        "title": "Titolo",
+        "unknown_author": "Sconosciuto",
+        "unknown_track": "Traccia sconosciuta"
+      }
+    },
+    "language": {
+      "errors": {
+        "guild_only": "Questo comando può essere usato solo all'interno di un server.",
+        "feature_unavailable": "Il cambio di lingua non è disponibile in questo momento.",
+        "db_unavailable": "Non sono riuscito ad accedere al database per salvare la tua preferenza.",
+        "unsupported": "Quella lingua non è ancora supportata.",
+        "no_permission": "Solo gli amministratori del server possono cambiare la lingua del server."
+      },
+      "success": {
+        "already_current": {
+          "title": "Niente è cambiato!",
+          "description": "Stiamo già parlando {language_label} qui."
+        },
+        "updated": {
+          "title": "Lingua aggiornata!",
+          "description": "Parlerò in {language_label} qui da ora in poi.",
+          "current_language_label": "Lingua attuale",
+          "footer": "Usa di nuovo /language quando vuoi cambiare."
+        },
+        "save_failed": "Non sono riuscito a salvare la tua preferenza ora. Riprova tra un momento."
+      }
+    },
+    "play": {
+      "volume": {
+        "decrease": {
+          "title": "🔉 Abbassa Volume"
+        },
+        "increase": {
+          "title": "🔊 Alza Volume"
+        },
+        "change": {
+          "description": "Volume cambiato da **{old}%** a **{new}%**"
+        },
+        "warning": {
+          "title": "⚠️ Avviso",
+          "description": "Il volume sopra il 100% potrebbe causare distorsioni!"
+        },
+        "command": {
+          "invalid_title": "❌ Volume Non Valido",
+          "invalid_description": "Il volume deve essere tra **0%** e **150%**.",
+          "title": "🔊 Volume Aggiornato",
+          "description": "Volume cambiato da **{old}%** a **{new}%**",
+          "level_label": "Livello Volume",
+          "level_value": "`{level}%` {bar}",
+          "silenced_title": "🔇 Silenziato",
+          "silenced_description": "Usa i pulsanti 🔊 o /volume per ripristinarlo."
+        }
+      },
+      "previous": {
+        "restarted": "⏮️ Traccia riavviata!",
+        "none": "⏮️ Non c'è una traccia precedente!"
+      },
+      "toggle": {
+        "resumed": "▶️ Riproduzione ripresa!",
+        "paused": "⏸️ Riproduzione in pausa!"
+      },
+      "pause": {
+        "resumed_title": "▶️ Riproduzione Ripresa",
+        "resumed_description": "**{title}** sta suonando di nuovo.",
+        "paused_title": "⏸️ Riproduzione in Pausa",
+        "paused_description": "**{title}** è stata messa in pausa."
+      },
+      "stop": {
+        "success": "⏹️ Riproduzione fermata e coda svuotata!",
+        "embed_title": "⏹️ Riproduzione Fermata",
+        "embed_description": "La riproduzione è stata fermata e la coda è stata svuotata.",
+        "footer": "Usa /play per avviare di nuovo la musica!"
+      },
+      "skip": {
+        "success": "⏭️ Traccia saltata!",
+        "embed_title": "⏭️ Traccia Saltata",
+        "embed_description": "**{track}** è stata saltata.",
+        "next_label": "⏭️ Traccia successiva",
+        "next_value": "**{title}**\n{author}"
+      },
+      "shuffle": {
+        "empty": "❌ Non ci sono tracce nella coda da mescolare!",
+        "success": "🔀 Coda mescolata! ({count} tracce)"
+      },
+      "loop": {
+        "button": {
+          "off": "Loop: Disattivato",
+          "track": "Loop: Traccia",
+          "queue": "Loop: Coda"
+        },
+        "responses": {
+          "off": "🔁 Loop disattivato.",
+          "track": "🔂 Loop traccia attivato.",
+          "queue": "🔁 Loop coda attivato."
+        }
+      },
+      "autocomplete": {
+        "prompt": "Digita almeno 2 caratteri per cercare...",
+        "url_detected": "URL rilevato: {value}...",
+        "no_results": "Nessun risultato trovato",
+        "error_choice": "Errore di ricerca: {value}",
+        "unknown_title": "Titolo sconosciuto",
+        "timeout": "⏳ La ricerca sta impiegando troppo tempo... continua a digitare"
+      },
+      "errors": {
+        "user_not_in_voice": "Devi essere in un canale vocale!",
+        "same_voice_channel": "Devi essere nello stesso canale vocale del bot per usare questi controlli!",
+        "lavalink_validation": "Non sono riuscito a validare la connessione Lavalink: {error}",
+        "lavalink_unavailable": {
+          "title": "🔧 Server temporaneamente non disponibile",
+          "description": "Il server responsabile della riproduzione musicale è temporaneamente offline. Riprova tra qualche istante!\n\nStiamo lavorando per ripristinare il servizio il più rapidamente possibile."
+        },
+        "connect_voice": "Non sono riuscito a connettermi al canale vocale: {error}",
+        "search_failure": "Qualcosa è andato storto durante la ricerca: {error}",
+        "not_found": {
+          "title": "❌ Non trovato",
+          "description": "Nessuna traccia corrisponde a quella query."
+        },
+        "playlist_start": "Non sono riuscito ad avviare la playlist: {error}",
+        "play_start": "Non sono riuscito ad avviare la riproduzione: {error}",
+        "process_failure": "Qualcosa è andato storto durante l'elaborazione della traccia: {error}\n\nPotrebbe essere un blocco IP dal lato YouTube. Non preoccuparti! Kennyy gestisce questo ruotando gli IP ogni ora."
+      },
+      "playlist": {
+        "added": {
+          "title": "📋 Playlist Aggiunta",
+          "description": "**{name}**\n{count} tracce aggiunte alla coda",
+          "stats_name": "📊 Statistiche",
+          "stats_value": "Totale in coda: {queue_count}"
+        }
+      },
+      "start": {
+        "playing_now": "▶️ In riproduzione ora: **{title}**"
+      },
+      "now_playing": {
+        "title": "🎵 In Riproduzione Ora",
+        "description": "**{title}**",
+        "volume_label": "Volume",
+        "queue_label": "Coda",
+        "status_label": "Stato",
+        "requested_by": "👤 Richiesto da",
+        "queue_value": "{count} traccia/e",
+        "status": {
+          "playing": "🔄 In riproduzione",
+          "paused": "⏸️ In pausa"
+        },
+        "footer": "Usa i pulsanti sotto per controllare la riproduzione • 🔉🔊 per il volume"
+      },
+      "queue": {
+        "added": {
+          "title": "➕ Aggiunto alla Coda",
+          "description": "**{title}**",
+          "position_label": "Posizione in coda",
+          "eta_label": "⏱️ Tempo stimato",
+          "footer": "Totale in coda: {count} traccia/e"
+        }
+      },
+      "seek": {
+        "errors": {
+          "no_track": "❌ Non sto riproducendo nulla.",
+          "format": "Formato tempo non valido.",
+          "out_of_range": "❌ Il tempo deve essere tra 0 e {max_seconds}s.",
+          "generic": "❌ Errore durante la ricerca: {error}"
+        },
+        "success": "⏩ Saltato a {timestamp}!"
+      }
+    },
+    "queue": {
+      "embed": {
+        "title": "Coda di Riproduzione",
+        "empty_description": "Nessuna traccia nella coda",
+        "status": {
+          "playing": "In riproduzione",
+          "paused": "In pausa"
+        },
+        "now_playing": "▶ In Riproduzione Ora",
+        "status_label": "Stato",
+        "progress_label": "Progresso",
+        "queue": {
+          "more": "... e altre {remaining} traccia/e",
+          "item": "`{index}.` {title} `({duration})`"
+        },
+        "queue_label": "Prossime",
+        "total_label": "Totale Tracce",
+        "total_value": "{count}",
+        "queue_time_label": "Durata Coda",
+        "remaining_time_label": "Tempo Rimanente",
+        "page_label": "Pagina",
+        "empty_queue": "Nessuna traccia nella coda",
+        "empty_total_value": "0",
+        "empty_queue_time": "00:00",
+        "footer": "Aggiornamento live • Usa /skipto per saltare a una traccia specifica"
+      },
+      "labels": {
+        "current_track": "Traccia Attuale"
+      },
+      "skipto": {
+        "errors": {
+          "empty": "Non ci sono tracce nella coda da saltare.",
+          "invalid_title": "Posizione non valida",
+          "invalid_description": "Usa un numero tra 1 e {max_position}.",
+          "generic": "Non sono riuscito a saltare a quella posizione: {error}"
+        },
+        "success": {
+          "title": "Saltando alla traccia",
+          "description": "⏭️ Saltando a **{title}**"
+        }
+      },
+      "clear": {
+        "errors": {
+          "empty": "Non ci sono tracce da eliminare."
+        },
+        "success": {
+          "title": "Coda Svuotata",
+          "removed_label": "Tracce Rimosse",
+          "removed_value": "{count}",
+          "current_value": "Ancora in riproduzione",
+          "title_value": "{title}"
+        }
+      },
+      "shuffle": {
+        "errors": {
+          "empty": "Non ci sono abbastanza tracce nella coda da mescolare."
+        },
+        "success": {
+          "title": "Coda Mescolata",
+          "shuffled_label": "Tracce Mescolate",
+          "shuffled_value": "{count}",
+          "next_track_label": "Traccia Successiva",
+          "next_track_value": "{title}",
+          "status_label": "Stato",
+          "status_value": "Ordine aggiornato"
+        }
+      },
+      "remove": {
+        "errors": {
+          "empty": "Non ci sono tracce nella coda da rimuovere.",
+          "invalid_title": "Posizione Non Valida",
+          "invalid_description": "Usa un numero tra 1 e {max_position}."
+        },
+        "success": {
+          "title": "Traccia Rimossa",
+          "track_label": "Traccia",
+          "track_value": "{title}",
+          "position_value": "{position}",
+          "remaining_label": "Coda Rimanente",
+          "remaining_value": "{count} traccia/e"
+        }
+      }
+    },
+    "admin": {
+      "errors": {
+        "no_permission": "❌ Non hai il permesso di usare questo comando."
+      },
+      "status": {
+        "labels": {
+          "online": "Online",
+          "dnd": "Non Disturbare",
+          "idle": "Assente",
+          "invisible": "Invisibile"
+        }
+      },
+      "setstatus": {
+        "success": {
+          "title": "✅ Stato aggiornato",
+          "description": "Nuovo stato: **{status_name}**"
+        }
+      },
+      "setpresence": {
+        "errors": {
+          "message_required": "❌ Per favore fornisci un 'messaggio' per la presenza.",
+          "streaming_message_required": "❌ Per favore fornisci un 'messaggio' per la presenza streaming.",
+          "streaming_url": "❌ Per 'Streaming', fornisci un URL valido (Twitch/YouTube)."
+        },
+        "success": {
+          "title": "✅ Presenza aggiornata",
+          "cleared": "Attività cancellata",
+          "updated": "Attività impostata: **{activity_label}** — {message}",
+          "url_label": "URL"
+        }
+      },
+      "logs": {
+        "enable": {
+          "title": "✅ Log attivati",
+          "description": "I log del bot sono stati attivati con successo!"
+        },
+        "disable": {
+          "title": "🔕 Log disattivati",
+          "description": "I log del bot sono stati disattivati con successo!"
+        },
+        "status": {
+          "title": "📊 Stato Log",
+          "description": "I log sono attualmente **{status}**.",
+          "enabled": "attivati",
+          "disabled": "disattivati",
+          "channel_label": "Canale Log",
+          "no_channel": "⚠️ Non configurato (imposta LOG_CHANNEL_ID in .env)"
+        },
+        "errors": {
+          "no_mongodb": "❌ MongoDB non è configurato. Impossibile salvare le preferenze dei log.",
+          "enable_failed": "❌ Errore nell'attivazione dei log: {error}",
+          "disable_failed": "❌ Errore nella disattivazione dei log: {error}",
+          "status_failed": "❌ Errore nel recupero dello stato dei log: {error}"
+        }
+      },
+      "setguildlanguage": {
+        "unknown_guild": "Server sconosciuto",
+        "errors": {
+          "bot_unavailable": "❌ Bot non disponibile.",
+          "feature_unavailable": "❌ Questa funzione non è disponibile in questa versione del bot.",
+          "invalid_guild_id": "❌ Inserisci un ID server valido.",
+          "db_unavailable": "❌ Database non configurato. Impossibile salvare la lingua del server.",
+          "unsupported": "❌ Lingua non supportata.",
+          "save_failed": "❌ Impossibile salvare la lingua per questo server.",
+          "unexpected": "❌ Errore imprevisto: {error}"
+        },
+        "success": {
+          "title": "✅ Lingua del server aggiornata",
+          "description": "Server **{guild_name}** (`{guild_id}`) impostato su **{language_label}**."
+        }
+      },
+      "guilds": {
+        "title": "📋 Server",
+        "empty": "Nessun server trovato.",
+        "footer": "Pagina {page}/{total_pages} • Totale: {total}",
+        "errors": {
+          "unexpected": "❌ Errore imprevisto: {error}"
+        }
+      },
+      "activity_types": {
+        "playing": "In riproduzione",
+        "listening": "Ascoltando",
+        "watching": "Guardando",
+        "competing": "Competendo",
+        "streaming": "Streaming"
+      }
+    },
+    "clearqueue": {
+      "empty": {
+        "title": "Coda Vuota",
+        "description": "Non ci sono tracce nella coda da eliminare.",
+        "current_label": "🎵 Traccia Attuale",
+        "current_value": "**{title}** è ancora in riproduzione\n(Usa /stop per fermare completamente)"
+      },
+      "success": {
+        "title": "🗑️ Coda Svuotata",
+        "removed_label": "Tracce Rimosse",
+        "removed_value": "{count}",
+        "status_label": "Stato Coda",
+        "status_value": "✅ Svuotata",
+        "current_label": "Traccia Attuale",
+        "current_value": "Ancora in riproduzione",
+        "now_playing_label": "🎵 In Riproduzione Ora",
+        "now_playing_value": "**{title}**\nDi: {author}",
+        "footer": "Usa /play per aggiungere nuove tracce alla coda"
+      }
+    },
+    "filter": {
+      "buttons": {
+        "bass_boost": {
+          "label": "Aumento Bassi",
+          "activated": "🎵 Aumento bassi attivato (livello medio)!",
+          "deactivated": "🎵 Aumento bassi disattivato!",
+          "error": "❌ Errore nell'applicazione dell'aumento bassi: {error}"
+        },
+        "nightcore": {
+          "label": "Nightcore",
+          "activated": "⚡ Nightcore attivato!",
+          "deactivated": "⚡ Nightcore disattivato!",
+          "error": "❌ Errore nell'applicazione del nightcore: {error}"
+        },
+        "karaoke": {
+          "label": "Karaoke",
+          "activated": "🎤 Karaoke attivato!",
+          "deactivated": "🎤 Karaoke disattivato!",
+          "error": "❌ Errore nell'applicazione del karaoke: {error}"
+        },
+        "rotation": {
+          "label": "Audio 8D",
+          "activated": "🌀 Audio 8D attivato!",
+          "deactivated": "🌀 Audio 8D disattivato!",
+          "error": "❌ Errore nell'applicazione dell'Audio 8D: {error}"
+        },
+        "reset": {
+          "label": "Ripristina",
+          "success": "🔄 Tutti i filtri rimossi!",
+          "error": "❌ Errore nel ripristino dei filtri: {error}"
+        }
+      },
+      "filters": {
+        "embed": {
+          "title": "🎛️ Pannello Filtri Audio",
+          "description": "Seleziona i filtri che vuoi applicare alla traccia:",
+          "now_playing_label": "🎵 In Riproduzione Ora",
+          "now_playing_value": "**{title}**\nDi: {author}",
+          "available_label": "🎛️ Filtri Disponibili",
+          "available_value": "🎵 **Aumento Bassi** - Aumenta i bassi\n⚡ **Nightcore** - Velocità + tono\n🎤 **Karaoke** - Rimuove le voci\n🌀 **Audio 8D** - Effetto rotazione\n🔄 **Ripristina** - Rimuove tutti",
+          "howto_label": "💡 Come usare",
+          "howto_value": "Clicca i pulsanti per attivare/disattivare i filtri. I filtri attivi diventano blu.",
+          "footer": "⚠️ I filtri potrebbero causare un leggero ritardo quando applicati"
+        }
+      },
+      "bassboost": {
+        "off": {
+          "title": "🎵 Aumento Bassi Disattivato",
+          "description": "L'aumento bassi è stato rimosso."
+        },
+        "on": {
+          "title": "🎵 Aumento Bassi Applicato",
+          "description": "Aumento bassi impostato al livello **{level}**",
+          "settings_label": "🔧 Impostazioni Tecniche"
+        },
+        "errors": {
+          "invalid_title": "❌ Livello Non Valido",
+          "invalid_description": "Il livello '{level}' non esiste. Usa: high, medium, low o off",
+          "generic": "Errore nell'applicazione dell'aumento bassi: {error}"
+        }
+      },
+      "reset": {
+        "title": "🔄 Filtri Ripristinati",
+        "description": "Tutti i filtri audio sono stati rimossi.",
+        "removed_label": "✅ Filtri Rimossi",
+        "removed_value": "🎵 Aumento Bassi\n⚡ Nightcore\n🎤 Karaoke\n🌀 Audio 8D\nE tutti gli altri filtri attivi",
+        "now_playing_label": "🎵 Traccia Attuale",
+        "now_playing_value": "**{title}**\nRitornato all'audio normale",
+        "error": "Errore nel ripristino dei filtri: {error}"
+      }
+    },
+    "help": {
+      "embed": {
+        "title": "📖 Comandi Disponibili",
+        "no_description": "Nessuna descrizione",
+        "footer": "Totale: {count} comando/i"
+      }
+    },
+    "ping": {
+      "embed": {
+        "title": "🏓 Ping",
+        "footer": "Misurazioni effettuate ora"
+      },
+      "fields": {
+        "discord": {
+          "name": "Discord (Gateway)",
+          "value": "{emoji} `{latency} ms`"
+        },
+        "lavalink": {
+          "label": "{identifier} ({scheme}://{host}:{port})",
+          "value": "{emoji} `{latency} ms` • endpoint: `{endpoint}`"
+        },
+        "lavalink_empty": {
+          "name": "Lavalink",
+          "value": "{emoji} nessuna configurazione trovata"
+        },
+        "cloudflare": {
+          "name": "1.1.1.1",
+          "value": "{emoji} `{latency} ms` • TCP 443"
+        }
+      }
+    },
+    "lyrics": {
+      "errors": {
+        "no_track": {
+          "title": "❌ Nessuna musica in riproduzione",
+          "description": "Non c'è musica in riproduzione ora. Usa /play per riprodurre qualcosa prima!"
+        },
+        "not_found": {
+          "title": "❌ Non trovato",
+          "description": "Impossibile trovare i testi per: **{query}**"
+        },
+        "fetch_failed": {
+          "title": "❌ Errore nel recupero dei testi",
+          "description": "Canzone trovata ma impossibile estrarre i testi."
+        },
+        "guild_only": "Questo comando può essere usato solo all'interno di un server.",
+        "feature_unavailable": "I testi non sono disponibili ora. Riprova più tardi."
+      },
+      "embed": {
+        "title": "🎵 {title}",
+        "footer": "Fonte: {source} • Traccia attuale: {track}"
+      },
+      "searching": {
+        "title": "🎶 Ricerca testi",
+        "description": "Cercando i testi di **{song}**...",
+        "footer": "Potrebbe richiedere alcuni secondi."
+      },
+      "warnings": {
+        "already_active": "⚠️ Ci sono già testi visualizzati in questo canale."
+      },
+      "stopped": "⏹️ Sincronizzazione testi fermata.",
+      "stop_button": "🛑 Ferma"
+    },
+    "search": {
+      "dropdown": {
+        "option_description": "👤 {author} • ⏱️ {duration}",
+        "placeholder": "🎵 Seleziona una traccia da riprodurre...",
+        "errors": {
+          "only_requester": "❌ Solo la persona che ha eseguito il comando può usare questo menu!",
+          "user_not_in_voice": "❌ Devi essere in un canale vocale per riprodurre musica!",
+          "connect_voice": "❌ Errore nella connessione al canale vocale: {error}",
+          "play": "❌ Errore nella riproduzione della traccia: {error}"
+        },
+        "footer": {
+          "queue": "🔍 Selezionato dalla ricerca • Usa i pulsanti per controllare",
+          "play": "🔍 Selezionato dalla ricerca • Usa i pulsanti per controllare"
+        }
+      },
+      "view": {
+        "cancel": {
+          "label": "❌ Annulla",
+          "errors": {
+            "only_requester": "❌ Solo la persona che ha eseguito il comando può annullare!"
+          },
+          "embed": {
+            "title": "🚫 Ricerca Annullata",
+            "description": "La ricerca di **{query}** è stata annullata."
+          }
+        }
+      },
+      "errors": {
+        "user_not_in_voice": "Devi essere in un canale vocale per usare questo comando!",
+        "no_results": {
+          "title": "❌ Nessun Risultato",
+          "description": "Nessuna traccia trovata per: **{query}**",
+          "tips_label": "💡 Suggerimenti",
+          "tips_value": "• Prova termini più specifici\n• Controlla l'ortografia\n• Usa nome artista + nome traccia"
+        },
+        "generic": "Si è verificato un errore durante la ricerca: {error}"
+      },
+      "playlist": {
+        "title": "🔍 Risultati Ricerca - Playlist",
+        "description": "**{name}**\nSeleziona una traccia dalla playlist:",
+        "info_label": "📋 Informazioni",
+        "info_value": "Totale tracce: {total}\nMostrando: {showing}"
+      },
+      "results": {
+        "title": "🔍 Risultati Ricerca",
+        "description": "Trovati **{count}** risultati per: **{query}**\nSeleziona una traccia:",
+        "howto_label": "💡 Come usare",
+        "howto_value": "Usa il menu sotto per selezionare la traccia desiderata",
+        "preview_label": "🎵 Anteprima Risultati",
+        "preview_item": "`{index}.` **{title}**\n👤 {author} • ⏱️ {duration}",
+        "preview_more": "... e altre **{remaining}** traccia/e",
+        "footer": "💡 Usa il menu a tendina sotto per selezionare • Scade tra 5 minuti"
+      }
+    }
+  },
+  "logs": {
+    "common": {
+      "unknown": "Sconosciuto",
+      "member_count": "{count} membri",
+      "verification": {
+        "none": "Nessuno",
+        "low": "Basso",
+        "medium": "Medio",
+        "high": "Alto",
+        "highest": "Molto alto"
+      },
+      "boost": {
+        "basic": "Livello {tier}",
+        "with_count": "Livello {tier} ({count} potenziamenti)"
+      }
+    },
+    "guild_join": {
+      "title": "📥 Entrato in un nuovo server!",
+      "fields": {
+        "name": "Nome Server",
+        "id": "ID Server",
+        "members": "Membri",
+        "owner": "Proprietario",
+        "created_at": "Creato il",
+        "verification": "Verifica",
+        "boost": "Potenziamento",
+        "total": "Server Totali"
+      },
+      "summary": "🌐 Ora sono in **{total}** server!"
+    },
+    "guild_remove": {
+      "title": "📤 Uscito da un server",
+      "fields": {
+        "name": "Nome Server",
+        "id": "ID Server",
+        "members": "Membri",
+        "owner": "Proprietario",
+        "created_at": "Creato il",
+        "verification": "Verifica",
+        "boost": "Potenziamento",
+        "total": "Server Totali"
+      },
+      "summary": "🌐 Ora sono in **{total}** server"
+    },
+    "music_start": {
+      "title": "🎵 Nuova traccia iniziata",
+      "fields": {
+        "music": "Traccia",
+        "server": "Server",
+        "channel": "Canale Vocale",
+        "requester": "Richiesto da"
+      },
+      "unknown_requester": "Sconosciuto"
+    },
+    "errors": {
+      "title": "❌ Errore: {type}",
+      "fields": {
+        "message": "Messaggio",
+        "guild": "Server",
+        "details": "Dettagli"
+      }
+    },
+    "lavalink": {
+      "details": "Nodo: {node}"
+    }
+  }
+}

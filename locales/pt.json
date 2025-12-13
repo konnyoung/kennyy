@@ -12,11 +12,20 @@
     "en": {
       "label": "Inglês"
     },
+    "es": {
+      "label": "Espanhol"
+    },
+    "it": {
+      "label": "Italiano"
+    },
     "ja": {
       "label": "Japonês"
     },
     "tr": {
       "label": "Turco"
+    },
+    "ru": {
+      "label": "Russo"
     }
   },
   "player": {
@@ -34,7 +43,7 @@
       "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). Tocando uma alternativa: **{fallback}**"
     },
     "track_retry": {
-      "title": "<:youtube:1446621413179002991> Baixando informações do vídeo",
+      "title": "<:deezer:1448437794090520658> Baixando informações da faixa",
       "pending": "Relaxa! Só preciso de mais algumas informações do servidor para continuar tocando. Isso vai demorar uns 5 segundos!"
     },
     "warp": {
@@ -184,8 +193,8 @@
   "same_voice_channel": "Você precisa estar no mesmo canal de voz que o bot para usar estes controles!",
         "lavalink_validation": "Não foi possível validar a conexão com o Lavalink: {error}",
         "lavalink_unavailable": {
-          "title": "❌ Lavalink indisponível",
-          "description": "O servidor de áudio não está respondendo no momento. Tente novamente em instantes.\n\nTalvez seja um bloqueio de IP da parte do YouTube. Não se preocupe! Kennyy sabe lutar contra isso e muda de IP a cada 1 hora."
+          "title": "🔧 Servidor temporariamente indisponível",
+          "description": "O servidor responsável pela reprodução de música está temporariamente fora do ar. Por favor, tente novamente mais tarde!\n\nEstamos trabalhando para restaurar o serviço o mais rápido possível."
         },
         "connect_voice": "Não foi possível conectar ao canal de voz: {error}",
         "search_failure": "Ocorreu um erro ao buscar a música: {error}",
@@ -377,6 +386,30 @@
           "enable_failed": "❌ Erro ao habilitar logs: {error}",
           "disable_failed": "❌ Erro ao desabilitar logs: {error}",
           "status_failed": "❌ Erro ao verificar status dos logs: {error}"
+        }
+      },
+      "setguildlanguage": {
+        "unknown_guild": "Servidor desconhecido",
+        "errors": {
+          "bot_unavailable": "❌ Bot não disponível.",
+          "feature_unavailable": "❌ Este recurso não está disponível nesta versão do bot.",
+          "invalid_guild_id": "❌ Insira um ID de servidor válido.",
+          "db_unavailable": "❌ Banco de dados não configurado. Não foi possível salvar o idioma do servidor.",
+          "unsupported": "❌ Idioma não suportado.",
+          "save_failed": "❌ Falha ao salvar o idioma para este servidor.",
+          "unexpected": "❌ Erro inesperado: {error}"
+        },
+        "success": {
+          "title": "✅ Idioma do servidor atualizado",
+          "description": "Servidor **{guild_name}** (`{guild_id}`) definido para **{language_label}**."
+        }
+      },
+      "guilds": {
+        "title": "📋 Servidores",
+        "empty": "Nenhum servidor encontrado.",
+        "footer": "Página {page}/{total_pages} • Total: {total}",
+        "errors": {
+          "unexpected": "❌ Erro inesperado: {error}"
         }
       },
       "activity_types": {

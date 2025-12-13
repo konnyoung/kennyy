@@ -12,11 +12,20 @@
     "en": {
       "label": "Anglais"
     },
+    "es": {
+      "label": "Espagnol"
+    },
+    "it": {
+      "label": "Italien"
+    },
     "ja": {
       "label": "Japonais"
     },
     "tr": {
       "label": "Turc"
+    },
+    "ru": {
+      "label": "Russe"
     }
   },
   "player": {
@@ -34,7 +43,7 @@
       "fallback_playing": "⚠️ Je n'ai pas pu lire **{original}** (connexion requise). Lecture d'une alternative : **{fallback}**"
     },
     "track_retry": {
-      "title": "<:youtube:1446621413179002991> Récupération des infos de la vidéo",
+      "title": "<:deezer:1448437794090520658> Récupération des infos de la piste",
       "pending": "Pas de panique ! J'ai juste besoin de quelques infos supplémentaires du serveur pour continuer la lecture. Ça prend environ 5 secondes !"
     },
     "warp": {
@@ -184,8 +193,8 @@
   "same_voice_channel": "Vous devez être dans le même salon vocal que le bot pour utiliser ces contrôles !",
         "lavalink_validation": "Impossible de valider la connexion Lavalink : {error}",
         "lavalink_unavailable": {
-          "title": "❌ Lavalink indisponible",
-          "description": "Le serveur audio ne répond pas pour le moment. Réessayez bientôt.\n\nIl se peut que YouTube bloque l'IP. Pas d'inquiétude ! Kennyy gère en changeant d'IP chaque heure."
+          "title": "🔧 Serveur temporairement indisponible",
+          "description": "Le serveur responsable de la lecture de musique est temporairement hors ligne. Veuillez réessayer plus tard !\n\nNous travaillons pour restaurer le service aussi rapidement que possible."
         },
         "connect_voice": "Impossible de rejoindre le salon vocal : {error}",
         "search_failure": "Une erreur est survenue pendant la recherche : {error}",
@@ -377,6 +386,30 @@
           "enable_failed": "❌ Impossible d'activer les journaux : {error}",
           "disable_failed": "❌ Impossible de désactiver les journaux : {error}",
           "status_failed": "❌ Impossible de vérifier l'état des journaux : {error}"
+        }
+      },
+      "setguildlanguage": {
+        "unknown_guild": "Serveur inconnu",
+        "errors": {
+          "bot_unavailable": "❌ Bot indisponible.",
+          "feature_unavailable": "❌ Cette fonctionnalité n'est pas disponible sur cette version du bot.",
+          "invalid_guild_id": "❌ Veuillez entrer un identifiant de serveur valide.",
+          "db_unavailable": "❌ Base de données non configurée. Impossible d'enregistrer la langue du serveur.",
+          "unsupported": "❌ Langue non prise en charge.",
+          "save_failed": "❌ Impossible d'enregistrer la langue pour ce serveur.",
+          "unexpected": "❌ Erreur inattendue : {error}"
+        },
+        "success": {
+          "title": "✅ Langue du serveur mise à jour",
+          "description": "Serveur **{guild_name}** (`{guild_id}`) défini sur **{language_label}**."
+        }
+      },
+      "guilds": {
+        "title": "📋 Serveurs",
+        "empty": "Aucun serveur trouvé.",
+        "footer": "Page {page}/{total_pages} • Total : {total}",
+        "errors": {
+          "unexpected": "❌ Erreur inattendue : {error}"
         }
       },
       "activity_types": {

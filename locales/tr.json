@@ -12,11 +12,20 @@
     "en": {
       "label": "İngilizce"
     },
+    "es": {
+      "label": "İspanyolca"
+    },
+    "it": {
+      "label": "İtalyanca"
+    },
     "ja": {
       "label": "Japonca"
     },
     "tr": {
       "label": "Türkçe"
+    },
+    "ru": {
+      "label": "Rusça"
     }
   },
   "player": {
@@ -34,7 +43,7 @@
       "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**"
     },
     "track_retry": {
-      "title": "<:youtube:1446621413179002991> Video bilgileri indiriliyor",
+      "title": "<:deezer:1448437794090520658> Parça bilgileri indiriliyor",
       "pending": "Sakin ol! Çalmaya devam edebilmem için sunucudan birkaç bilgi daha almam gerekiyor. Bu yaklaşık 5 saniye sürecek!"
     },
     "warp": {
@@ -171,8 +180,8 @@
   "same_voice_channel": "Kontrolleri kullanmak için bot ile aynı ses kanalında olmalısınız!",
         "lavalink_validation": "Lavalink bağlantısı doğrulanamadı: {error}",
         "lavalink_unavailable": {
-          "title": "❌ Lavalink kullanılamıyor",
-          "description": "Ses sunucusu şu anda yanıt vermiyor. Birazdan tekrar deneyin.\n\nBu YouTube kaynaklı bir IP engeli olabilir. Endişelenme! Kennyy bunu hallediyor ve her saat IP değiştiriyor."
+          "title": "🔧 Sunucu geçici olarak kullanılamıyor",
+          "description": "Müzik çalmaktan sorumlu sunucu geçici olarak çevrimdışı. Lütfen daha sonra tekrar deneyin!\n\nHizmeti mümkün olan en kısa sürede geri yüklemek için çalışıyoruz."
         },
         "connect_voice": "Ses kanalına bağlanılamadı: {error}",
         "search_failure": "Arama sırasında bir şeyler yanlış gitti: {error}",
@@ -364,6 +373,30 @@
           "enable_failed": "❌ Loglar açılamadı: {error}",
           "disable_failed": "❌ Loglar kapatılamadı: {error}",
           "status_failed": "❌ Logları almayı başaramadı.: {error}"
+        }
+      },
+      "setguildlanguage": {
+        "unknown_guild": "Bilinmeyen sunucu",
+        "errors": {
+          "bot_unavailable": "❌ Bot kullanılamıyor.",
+          "feature_unavailable": "❌ Bu özellik bu bot sürümünde mevcut değil.",
+          "invalid_guild_id": "❌ Geçerli bir sunucu ID'si girin.",
+          "db_unavailable": "❌ Veritabanı yapılandırılmamış. Sunucu dili kaydedilemiyor.",
+          "unsupported": "❌ Desteklenmeyen dil.",
+          "save_failed": "❌ Bu sunucu için dil kaydedilemedi.",
+          "unexpected": "❌ Beklenmeyen hata: {error}"
+        },
+        "success": {
+          "title": "✅ Sunucu dili güncellendi",
+          "description": "Sunucu **{guild_name}** (`{guild_id}`) dili **{language_label}** olarak ayarlandı."
+        }
+      },
+      "guilds": {
+        "title": "📋 Sunucular",
+        "empty": "Sunucu bulunamadı.",
+        "footer": "Sayfa {page}/{total_pages} • Toplam: {total}",
+        "errors": {
+          "unexpected": "❌ Beklenmeyen hata: {error}"
         }
       },
       "activity_types": {

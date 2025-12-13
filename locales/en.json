@@ -12,11 +12,20 @@
     "en": {
       "label": "English"
     },
+    "es": {
+      "label": "Spanish"
+    },
+    "it": {
+      "label": "Italian"
+    },
     "ja": {
       "label": "Japanese"
     },
     "tr": {
       "label": "Turkish"
+    },
+    "ru": {
+      "label": "Russian"
     }
   },
   "player": {
@@ -34,7 +43,7 @@
       "fallback_playing": "⚠️ I couldn't play **{original}** (login required). Playing an alternative: **{fallback}**"
     },
     "track_retry": {
-      "title": "<:youtube:1446621413179002991> Downloading video info",
+      "title": "<:deezer:1448437794090520658> Downloading track info",
       "pending": "Sit tight! I just need a bit more info from the server to keep playing. This will take about 5 seconds!"
     },
     "warp": {
@@ -184,8 +193,8 @@
   "same_voice_channel": "You need to be in the same voice channel as the bot to use these controls!",
         "lavalink_validation": "Couldn't validate the Lavalink connection: {error}",
         "lavalink_unavailable": {
-          "title": "❌ Lavalink unavailable",
-          "description": "The audio server isn't responding right now. Try again in a moment.\n\nIt might be a YouTube-side IP block. Don't worry! Kennyy handles this by rotating IPs every hour."
+          "title": "🔧 Server temporarily unavailable",
+          "description": "The server responsible for music playback is temporarily offline. Please try again in a few moments!\n\nWe're working to restore service as quickly as possible."
         },
         "connect_voice": "Couldn't connect to the voice channel: {error}",
         "search_failure": "Something went wrong while searching: {error}",
@@ -377,6 +386,30 @@
           "enable_failed": "❌ Failed to enable logs: {error}",
           "disable_failed": "❌ Failed to disable logs: {error}",
           "status_failed": "❌ Failed to fetch log status: {error}"
+        }
+      },
+      "setguildlanguage": {
+        "unknown_guild": "Unknown server",
+        "errors": {
+          "bot_unavailable": "❌ Bot not available.",
+          "feature_unavailable": "❌ This feature is not available on this bot build.",
+          "invalid_guild_id": "❌ Please enter a valid server ID.",
+          "db_unavailable": "❌ Database not configured. Unable to save server language.",
+          "unsupported": "❌ Unsupported language.",
+          "save_failed": "❌ Failed to save language for this server.",
+          "unexpected": "❌ Unexpected error: {error}"
+        },
+        "success": {
+          "title": "✅ Server language updated",
+          "description": "Server **{guild_name}** (`{guild_id}`) language set to **{language_label}**."
+        }
+      },
+      "guilds": {
+        "title": "📋 Servers",
+        "empty": "No servers found.",
+        "footer": "Page {page}/{total_pages} • Total: {total}",
+        "errors": {
+          "unexpected": "❌ Unexpected error: {error}"
         }
       },
       "activity_types": {

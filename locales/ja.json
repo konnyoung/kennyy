@@ -12,11 +12,20 @@
     "en": {
       "label": "英語"
     },
+    "es": {
+      "label": "スペイン語"
+    },
+    "it": {
+      "label": "イタリア語"
+    },
     "ja": {
       "label": "日本語"
     },
     "tr": {
       "label": "トルコ語"
+    },
+    "ru": {
+      "label": "ロシア語"
     }
   },
   "player": {
@@ -34,7 +43,7 @@
       "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します"
     },
     "track_retry": {
-      "title": "<:youtube:1446621413179002991> 動画情報を取得中",
+      "title": "<:deezer:1448437794090520658> トラック情報を取得中",
       "pending": "ちょっと待ってね！再生を続けるためにサーバーからもう少し情報を取得します。5秒ほどかかります！"
     },
     "warp": {
@@ -184,8 +193,8 @@
         "same_voice_channel": "これらの操作を使うには、ボットと同じボイスチャンネルにいる必要があります！",
         "lavalink_validation": "Lavalink の接続を確認できませんでした: {error}",
         "lavalink_unavailable": {
-          "title": "❌ Lavalink が利用できません",
-          "description": "オーディオサーバーが応答していません。少し時間をおいてもう一度お試しください。\n\nYouTube 側の IP ブロックかもしれません。心配しないで！ Kennyy は1時間ごとに IP を切り替えて対応しています。"
+          "title": "🔧 サーバーが一時的に利用できません",
+          "description": "音楽再生を担当するサーバーが一時的にオフラインです。後でもう一度お試しください！\n\nできるだけ早くサービスを復旧するよう取り組んでいます。"
         },
         "connect_voice": "ボイスチャンネルに接続できませんでした: {error}",
         "search_failure": "検索中に問題が発生しました: {error}",
@@ -377,6 +386,30 @@
           "enable_failed": "❌ ログを有効化できませんでした: {error}",
           "disable_failed": "❌ ログを無効化できませんでした: {error}",
           "status_failed": "❌ ログの状態を取得できませんでした: {error}"
+        }
+      },
+      "setguildlanguage": {
+        "unknown_guild": "不明なサーバー",
+        "errors": {
+          "bot_unavailable": "❌ Bot を利用できません。",
+          "feature_unavailable": "❌ この機能は現在のボットでは利用できません。",
+          "invalid_guild_id": "❌ 有効なサーバーIDを入力してください。",
+          "db_unavailable": "❌ データベースが設定されていません。サーバーの言語を保存できません。",
+          "unsupported": "❌ 未対応の言語です。",
+          "save_failed": "❌ このサーバーの言語を保存できませんでした。",
+          "unexpected": "❌ 予期しないエラー: {error}"
+        },
+        "success": {
+          "title": "✅ サーバーの言語を更新しました",
+          "description": "サーバー **{guild_name}** (`{guild_id}`) の言語を **{language_label}** に設定しました。"
+        }
+      },
+      "guilds": {
+        "title": "📋 サーバー",
+        "empty": "サーバーが見つかりません。",
+        "footer": "ページ {page}/{total_pages} • 合計: {total}",
+        "errors": {
+          "unexpected": "❌ 予期しないエラー: {error}"
         }
       },
       "activity_types": {
