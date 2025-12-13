@@ -65,6 +65,9 @@ class MusicBot(commands.Bot):
         self.owner_ids: set[int] = self._load_owner_ids()
         self.logger = None
         self.enable_warp_reconnect: bool = True
+        # Afinidade de node por sessão (por guild): usada para manter o mesmo node após failover
+        # enquanto o bot permanecer conectado na call. Não é persistido.
+        self._session_node_affinity: dict[int, str] = {}
 
         if not self.owner_ids:
             print("Aviso: BOT_OWNER_IDS não definidos. Comandos de administrador do bot ficarão indisponíveis.")
@@ -73,6 +76,44 @@ class MusicBot(commands.Bot):
         self.enable_warp_reconnect = self._load_warp_setting()
         self._load_locales()
         self._init_logger()
+
+    def _get_node_display_name(self, node: wavelink.Node | None) -> str | None:
+        identifier = getattr(node, "identifier", None)
+        if not identifier:
+            return None
+
+        identifier_str = str(identifier)
+
+        for cfg in getattr(self, "_lavalink_cfgs", []) or []:
+            try:
+                if str(cfg.get("id")) != identifier_str:
+                    continue
+                name = str(cfg.get("name") or "").strip()
+                if name:
+                    return name
+            except Exception:
+                continue
+
+        match = re.match(r"^node(\d+)$", identifier_str)
+        if match:
+            env_name = (os.getenv(f"LAVALINK_NODE{match.group(1)}_NAME", "") or "").strip()
+            if env_name:
+                return env_name
+
+        return identifier_str
+
+    def _set_session_node_affinity(self, guild_id: int | None, node_identifier: str | None) -> None:
+        if not guild_id or not node_identifier:
+            return
+        self._session_node_affinity[int(guild_id)] = str(node_identifier)
+
+    def _clear_session_node_affinity(self, guild_id: int | None) -> None:
+        if not guild_id:
+            return
+        try:
+            self._session_node_affinity.pop(int(guild_id), None)
+        except Exception:
+            pass
 
     def _load_owner_ids(self) -> set[int]:
         raw = os.getenv("BOT_OWNER_IDS", "")
@@ -411,6 +452,10 @@ class MusicBot(commands.Bot):
             except Exception as exc:
                 print(f"Falha ao desconectar após ausência prolongada: {exc}")
         finally:
+            try:
+                self._clear_session_node_affinity(guild_id)
+            except Exception:
+                pass
             if player is not None:
                 player.afk_pause_active = False
 
@@ -565,8 +610,62 @@ class MusicBot(commands.Bot):
 
         await self._evaluate_voice_channel(member.guild)
 
+    @commands.Cog.listener()
+    async def on_wavelink_websocket_closed(self, payload: wavelink.WebsocketClosedEventPayload):
+        """Detecta quando a conexão WebSocket com um node é perdida"""
+        try:
+            player = getattr(payload, "player", None)
+            if player is None:
+                print(f"⚠️ WebSocket fechado (player=None, código: {payload.code})")
+                return
+            
+            guild = getattr(player, "guild", None)
+            # Durante failover de node não queremos nenhum cleanup agressivo que derrube a call.
+            try:
+                if guild is not None and getattr(guild, "_node_failover_inflight", False):
+                    return
+            except Exception:
+                pass
+            guild_id = guild.id if guild else "unknown"
+            node = getattr(player, "node", None)
+            node_id = getattr(node, "identifier", "unknown") if node else "unknown"
+            
+            print(f"⚠️ WebSocket fechado para player na guild {guild_id} (node: {node_id})")
+            print(f"   Código: {payload.code}, Razão: {payload.reason}, By remote: {payload.by_remote}")
+            
+            # Se o node caiu (não foi fechamento normal), tenta destruir o player
+            if payload.code in [1006, 4014, 4015]:  # Códigos de erro de conexão
+                print(f"🔴 Node {node_id} parece ter caído. Limpando player...")
+                try:
+                    await player.disconnect(force=True)
+                    print(f"✅ Player da guild {guild_id} desconectado com sucesso")
+                except Exception as exc:
+                    print(f"⚠️ Erro ao desconectar player: {exc}")
+        except Exception as e:
+            print(f"⚠️ Erro no handler de WebSocket fechado: {e}")
+
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
-        print(f"Nó Lavalink '{payload.node.identifier}' está pronto!")
+        node = payload.node
+        print(f"Nó Lavalink '{node.identifier}' está pronto!")
+        
+        # Quando um nó reconecta, limpa sessões antigas dos players
+        # Isso força o rebuild na próxima interação, evitando o bug de "entrar e sair da call"
+        try:
+            new_session_id = getattr(node, "session_id", None)
+            if new_session_id:
+                # Atualiza a session_id de todos os players deste nó
+                for player in list(node.players.values()):
+                    old_session = getattr(player, "_session_id", None)
+                    
+                    if old_session and old_session != new_session_id:
+                        print(f"🔄 Player guild {player.guild.id} com sessão antiga ({old_session}). Nova sessão: {new_session_id}")
+                        # Remove a session antiga para forçar rebuild
+                        player._session_id = None
+                    elif not old_session:
+                        # Player novo ou sem rastreamento - atribui a sessão atual
+                        player._session_id = new_session_id
+        except Exception as exc:
+            print(f"Aviso: erro ao atualizar session_id dos players após reconnect do nó: {exc}")
 
     async def on_guild_join(self, guild: discord.Guild):
         """Evento chamado quando o bot entra em um servidor"""
@@ -618,12 +717,15 @@ class MusicBot(commands.Bot):
             if not host:
                 continue
 
+            name = (os.getenv(f"LAVALINK_NODE{idx}_NAME", "") or "").strip()
+
             port = (os.getenv(f"LAVALINK_NODE{idx}_PORT", "2333") or "2333").strip() or "2333"
             password = os.getenv(f"LAVALINK_NODE{idx}_PASSWORD", "youshallnotpass")
             secure = (os.getenv(f"LAVALINK_NODE{idx}_SECURE", "false") or "false").lower() == "true"
             protocol = "wss" if secure else "ws"
             configs.append({
                 "id": f"node{idx}",
+                "name": name,
                 "protocol": protocol,
                 "host": host,
                 "port": port,
@@ -635,12 +737,14 @@ class MusicBot(commands.Bot):
         if not configs:
             host = (os.getenv("LAVALINK_HOST", "") or "").strip()
             if host:
+                name = (os.getenv("LAVALINK_NODE1_NAME", "") or os.getenv("LAVALINK_NAME", "") or "").strip()
                 port = (os.getenv("LAVALINK_PORT", "2333") or "2333").strip() or "2333"
                 password = os.getenv("LAVALINK_PASSWORD", "youshallnotpass")
                 secure = (os.getenv("LAVALINK_SECURE", "false") or "false").lower() == "true"
                 protocol = "wss" if secure else "ws"
                 configs.append({
                     "id": "node1",
+                    "name": name,
                     "protocol": protocol,
                     "host": host,
                     "port": port,
@@ -695,10 +799,147 @@ class MusicBot(commands.Bot):
                         status_name = "DESCONHECIDO"
                     print(f"Nó {identifier}: {uri} • status={status_name}")
 
+    async def mark_node_as_failed(self, node_identifier: str) -> None:
+        """Marca um nó como falho e o remove do pool (não tenta reconectar)."""
+        print(f"⚠️ Marcando nó {node_identifier} como falho...")
+        
+        # Apenas fecha o nó sem tentar reconectar
+        try:
+            node = wavelink.Pool.get_node(node_identifier)
+            print(f"🔌 Desconectando nó {node_identifier} (watchdog tentará reconectar depois)...")
+            await node.close(eject=True)
+            print(f"✅ Nó {node_identifier} removido do pool. Próximas conexões usarão outros nodes.")
+        except wavelink.InvalidNodeException:
+            print(f"ℹ️ Nó {node_identifier} já não está no pool.")
+        except Exception as exc:
+            print(f"⚠️ Erro ao fechar nó {node_identifier}: {exc}")
+
+    async def reconnect_specific_node(self, node_identifier: str) -> bool:
+        """Reconecta um nó específico sem afetar os outros (usado pelo watchdog)."""
+        # Fecha apenas o nó específico se ainda existir
+        try:
+            node = wavelink.Pool.get_node(node_identifier)
+            await node.close(eject=True)
+        except wavelink.InvalidNodeException:
+            pass  # Node já foi removido
+        except Exception:
+            pass  # Silencioso durante watchdog
+        
+        await asyncio.sleep(0.3)
+        
+        # Encontra a config do nó
+        cfg = None
+        for c in self._lavalink_cfgs:
+            if c["id"] == node_identifier:
+                cfg = c
+                break
+        
+        if not cfg:
+            return False
+        
+        # Reconecta apenas este nó (suprime logging temporariamente)
+        uri = f"{cfg['protocol']}://{cfg['host']}:{cfg['port']}"
+        new_node = wavelink.Node(uri=uri, password=cfg["password"], identifier=node_identifier)
+        
+        # Suprime temporariamente o logging do Wavelink
+        wavelink_logger = logging.getLogger("wavelink")
+        original_level = wavelink_logger.level
+        wavelink_logger.setLevel(logging.CRITICAL)
+        
+        try:
+            await wavelink.Pool.connect(client=self, nodes=[new_node])
+        except Exception:
+            return False
+        finally:
+            wavelink_logger.setLevel(original_level)
+        
+        # Aguarda o nó ficar pronto (máximo 2 segundos para não bloquear)
+        max_wait = 2.0
+        waited = 0.0
+        poll_interval = 0.2
+        
+        while waited < max_wait:
+            try:
+                node = wavelink.Pool.get_node(node_identifier)
+                if node.status == wavelink.NodeStatus.CONNECTED:
+                    print(f"✅ Nó {node_identifier} reconectado!")
+                    return True
+            except wavelink.InvalidNodeException:
+                pass
+            
+            await asyncio.sleep(poll_interval)
+            waited += poll_interval
+        
+        print(f"⚠️ Nó {node_identifier} não conectou após {max_wait}s.")
+        return False
+
+    async def force_reconnect_lavalink(self) -> bool:
+        """Força uma reconexão completa com todos os nós Lavalink, fechando conexões antigas."""
+        print("🔄 Forçando reconexão completa com todos os nós Lavalink...")
+        
+        # Fecha todos os nós existentes
+        for node in list(wavelink.Pool.nodes.values()):
+            identifier = getattr(node, "identifier", "unknown")
+            try:
+                print(f"🔌 Desconectando nó {identifier}...")
+                await node.close(eject=True)
+            except Exception as exc:
+                print(f"Aviso: erro ao fechar nó {identifier}: {exc}")
+        
+        # Aguarda um pouco para garantir que as conexões foram fechadas
+        await asyncio.sleep(0.5)
+        
+        # Reconecta todos os nós
+        await self.connect_lavalink()
+        
+        # Aguarda os nós ficarem prontos (máximo 5 segundos)
+        print("⏳ Aguardando nós ficarem prontos...")
+        max_wait = 5.0
+        waited = 0.0
+        poll_interval = 0.2
+        
+        while waited < max_wait:
+            connected_count = 0
+            for cfg in self._lavalink_cfgs:
+                identifier = cfg["id"]
+                try:
+                    node = wavelink.Pool.get_node(identifier)
+                    if node.status == wavelink.NodeStatus.CONNECTED:
+                        connected_count += 1
+                except wavelink.InvalidNodeException:
+                    pass
+            
+            if connected_count > 0:
+                break
+            
+            await asyncio.sleep(poll_interval)
+            waited += poll_interval
+        
+        # Verifica status final de cada nó
+        connected_count = 0
+        for cfg in self._lavalink_cfgs:
+            identifier = cfg["id"]
+            try:
+                node = wavelink.Pool.get_node(identifier)
+                if node.status == wavelink.NodeStatus.CONNECTED:
+                    connected_count += 1
+                    print(f"✅ Nó {identifier} reconectado com sucesso!")
+                else:
+                    status_name = getattr(node.status, "name", str(node.status))
+                    print(f"⚠️ Nó {identifier} ainda não conectou (status: {status_name})")
+            except wavelink.InvalidNodeException:
+                print(f"❌ Nó {identifier} não foi reconectado.")
+        
+        if connected_count > 0:
+            print(f"✅ Reconexão concluída: {connected_count}/{len(self._lavalink_cfgs)} nós ativos.")
+            return True
+        else:
+            print("❌ Nenhum nó foi reconectado após aguardar.")
+            return False
+
     async def ensure_lavalink_connected(self) -> bool:
         """Valida a conexão com os nós Lavalink e tenta reconectar se necessário."""
-        await self.connect_lavalink()
-
+        # Primeiro verifica se já existe algum nó conectado
         connected_nodes: list[wavelink.Node] = []
         pending_identifiers: list[str] = []
 
@@ -715,8 +956,29 @@ class MusicBot(commands.Bot):
             else:
                 pending_identifiers.append(identifier)
 
-        if pending_identifiers:
-            print(f"⏳ Aguardando reconexão dos nós: {', '.join(pending_identifiers)}")
+        # Se já existe pelo menos um nó conectado, tenta reconectar os pendentes em background
+        if connected_nodes:
+            if pending_identifiers:
+                print(f"🔄 Tentando reconectar nós pendentes em background: {', '.join(pending_identifiers)}")
+                # Tenta reconectar cada node pendente sem bloquear
+                for pending_id in pending_identifiers:
+                    asyncio.create_task(self.reconnect_specific_node(pending_id))
+            return True
+
+        # Se não há nenhum nó conectado, tenta conectar
+        print("⚠️ Nenhum nó Lavalink conectado. Tentando conectar...")
+        await self.connect_lavalink()
+
+        # Verifica novamente após a tentativa de conexão
+        connected_nodes.clear()
+        for cfg in self._lavalink_cfgs:
+            identifier = cfg["id"]
+            try:
+                node = wavelink.Pool.get_node(identifier)
+                if node.status == wavelink.NodeStatus.CONNECTED:
+                    connected_nodes.append(node)
+            except wavelink.InvalidNodeException:
+                continue
 
         if not connected_nodes:
             print("❌ Nenhum nó Lavalink conectado no momento.")
@@ -773,8 +1035,20 @@ class MusicBot(commands.Bot):
                 if not ok:
                     # Aguarda um pouco antes de tentar novamente para evitar loop agressivo
                     await asyncio.sleep(15)
-                # Intervalo padrão entre checagens
-                await asyncio.sleep(60)
+                else:
+                    # Verifica se há nodes pendentes para ajustar intervalo
+                    pending_count = 0
+                    for cfg in self._lavalink_cfgs:
+                        try:
+                            node = wavelink.Pool.get_node(cfg["id"])
+                            if node.status != wavelink.NodeStatus.CONNECTED:
+                                pending_count += 1
+                        except wavelink.InvalidNodeException:
+                            pending_count += 1
+                    
+                    # Se há nodes pendentes, checa mais frequentemente (15s), senão usa intervalo normal (60s)
+                    check_interval = 15 if pending_count > 0 else 60
+                    await asyncio.sleep(check_interval)
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -1013,6 +1287,11 @@ class MusicBot(commands.Bot):
         if not hasattr(player, "_fallback_attempts"):
             player._fallback_attempts = set()
         player._fallback_in_progress = False
+        # Reset de tentativas de failover por node para a faixa atual
+        try:
+            player._unavailable_failover_attempts = set()
+        except Exception:
+            pass
         loop_mode = self._get_loop_mode(player)
         self._apply_loop_mode(player, loop_mode)
         await self._cancel_progress_task(player)
@@ -1029,6 +1308,15 @@ class MusicBot(commands.Bot):
         reason_upper = reason.upper() if isinstance(reason, str) else "UNKNOWN"
         if reason_upper == "LOADFAILED":
             reason_upper = "LOAD_FAILED"
+
+        # Evita que eventos disparados por disconnect/reconnect durante failover
+        # executem o fluxo normal (que pode desconectar a call).
+        try:
+            guild = getattr(player, "guild", None)
+            if guild is not None and getattr(guild, "_node_failover_inflight", False) and reason_upper != "LOAD_FAILED":
+                return
+        except Exception:
+            pass
 
         print(f"Track finalizado. Razão: {reason_upper}. Guild: {getattr(player.guild, 'name', 'Desconhecido')}")
 
@@ -1065,6 +1353,26 @@ class MusicBot(commands.Bot):
                 player._last_error = None
                 if scheduled:
                     return
+
+            # Failover automático entre nodes quando o vídeo estiver indisponível.
+            # Não notifica o usuário enquanto ainda houver alternativas.
+            node_failover_started = await self._try_play_node_failover_for_unavailable(
+                player,
+                payload.track,
+                exception_info,
+            )
+            player._last_error = None
+            if node_failover_started:
+                return
+
+            # Se a tentativa de failover desconectou/reconectou o voice_client,
+            # garante que o restante do fluxo use o player atual.
+            try:
+                refreshed = getattr(getattr(player, "guild", None), "voice_client", None)
+                if isinstance(refreshed, wavelink.Player) and refreshed is not player:
+                    player = refreshed
+            except Exception:
+                pass
 
             fallback_started = await self._try_play_fallback(player, payload.track, exception_info)
             player._last_error = None
@@ -1177,6 +1485,219 @@ class MusicBot(commands.Bot):
                     print(f"Erro ao enviar log de erro do Lavalink: {exc}")
         else:
             player._last_error = None
+
+    def _is_video_unavailable_error(self, exception: dict | None) -> bool:
+        if not isinstance(exception, dict):
+            return False
+        message = str(exception.get("message") or "").lower()
+        cause = str(exception.get("cause") or "").lower()
+        combined = f"{message} {cause}".strip()
+        return "this video is unavailable" in combined
+
+    def _connected_nodes_in_priority_order(self) -> list[wavelink.Node]:
+        nodes: list[wavelink.Node] = []
+        seen: set[str] = set()
+
+        for cfg in getattr(self, "_lavalink_cfgs", []) or []:
+            identifier = cfg.get("id")
+            if not identifier or identifier in seen:
+                continue
+            try:
+                node = wavelink.Pool.get_node(identifier)
+            except wavelink.InvalidNodeException:
+                continue
+            if node.status != wavelink.NodeStatus.CONNECTED:
+                continue
+            nodes.append(node)
+            seen.add(identifier)
+
+        for node in wavelink.Pool.nodes.values():
+            if node.identifier in seen or node.status != wavelink.NodeStatus.CONNECTED:
+                continue
+            nodes.append(node)
+            seen.add(node.identifier)
+
+        return nodes
+
+    async def _try_play_node_failover_for_unavailable(
+        self,
+        player: wavelink.Player,
+        track: wavelink.Playable | None,
+        exception: dict | None,
+    ) -> bool:
+        if not player or track is None:
+            return False
+
+        # Só tenta se realmente for o erro esperado.
+        if not self._is_video_unavailable_error(exception):
+            return False
+
+        # Se o usuário usa apenas 1 node (ou só 1 conectado), mantém comportamento atual.
+        candidates = self._connected_nodes_in_priority_order()
+        if len(candidates) <= 1:
+            return False
+
+        current_node = getattr(player, "node", None)
+        current_id = getattr(current_node, "identifier", None)
+        original_node = current_node
+
+        tried = getattr(player, "_unavailable_failover_attempts", None)
+        if not isinstance(tried, set):
+            tried = set()
+        if current_id:
+            tried.add(str(current_id))
+
+        guild = getattr(player, "guild", None)
+        voice_channel = getattr(player, "channel", None)
+        if guild is None or voice_channel is None:
+            return False
+
+        # Marca que estamos em failover para evitar fluxos paralelos de track_end.
+        try:
+            setattr(guild, "_node_failover_inflight", True)
+        except Exception:
+            pass
+
+        loop_mode = self._get_loop_mode(player)
+
+        async def _migrate_player_to_node(target_node: wavelink.Node) -> bool:
+            """Migra o MESMO player para outro node Lavalink sem reconectar voz no Discord."""
+            if target_node is None:
+                return False
+
+            try:
+                if target_node.status != wavelink.NodeStatus.CONNECTED:
+                    return False
+            except Exception:
+                pass
+
+            guild_id = getattr(guild, "id", None)
+            if not guild_id:
+                return False
+
+            # Precisa de voice state completo para mandar o VOICE_UPDATE para o novo node.
+            try:
+                voice_data = getattr(player, "_voice_state", {}).get("voice", {})
+            except Exception:
+                voice_data = {}
+
+            session_id = voice_data.get("session_id")
+            token = voice_data.get("token")
+            endpoint = voice_data.get("endpoint")
+            if not session_id or not token or not endpoint:
+                return False
+
+            old_node = getattr(player, "node", None)
+            if old_node is target_node:
+                return True
+
+            # "Mata" o player no node antigo (best-effort) pra não ficar player fantasma.
+            try:
+                if old_node is not None and getattr(old_node, "session_id", None):
+                    await old_node._destroy_player(int(guild_id))
+            except Exception:
+                pass
+
+            # Atualiza mapeamentos internos antes de mandar eventos pro novo node.
+            try:
+                if old_node is not None:
+                    old_node._players.pop(int(guild_id), None)
+            except Exception:
+                pass
+
+            try:
+                player._node = target_node
+            except Exception:
+                return False
+
+            try:
+                target_node._players[int(guild_id)] = player
+            except Exception:
+                pass
+
+            request = {"voice": {"sessionId": session_id, "token": token, "endpoint": endpoint}}
+            try:
+                await target_node._update_player(int(guild_id), data=request)
+            except Exception:
+                # Reverte se falhar, sem derrubar a call.
+                try:
+                    target_node._players.pop(int(guild_id), None)
+                except Exception:
+                    pass
+                try:
+                    if old_node is not None:
+                        player._node = old_node
+                        try:
+                            old_node._players[int(guild_id)] = player
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                return False
+
+            # Atualiza o rastreamento de sessão do player para evitar rebuild desnecessário
+            # quando o usuário adiciona mais músicas logo após o failover.
+            try:
+                player._session_id = getattr(target_node, "session_id", None)
+            except Exception:
+                pass
+
+            # Mantém afinidade com o node atual enquanto durar a sessão na call.
+            try:
+                self._set_session_node_affinity(int(guild_id), getattr(target_node, "identifier", None))
+            except Exception:
+                pass
+
+            return True
+
+        try:
+            # Ordem: tenta todos os nodes conectados exceto o atual e os já tentados.
+            for node in candidates:
+                node_id = getattr(node, "identifier", None)
+                if not node_id:
+                    continue
+                if current_id and node_id == current_id:
+                    continue
+                if str(node_id) in tried:
+                    continue
+
+                print(f"🔁 Video indisponível. Tentando failover do node '{current_id}' para '{node_id}'...")
+                tried.add(str(node_id))
+
+                try:
+                    migrated = await _migrate_player_to_node(node)
+                    if not migrated:
+                        continue
+
+                    await player.play(track)
+                    self._apply_loop_mode(player, loop_mode)
+                    try:
+                        player._unavailable_failover_attempts = tried
+                    except Exception:
+                        pass
+                    return True
+                except Exception as exc:
+                    print(f"Falha ao fazer failover para node '{node_id}': {exc}")
+                    continue
+
+            # Esgotou alternativas: volta para o node original (best-effort), sem derrubar a call.
+            try:
+                if original_node is not None:
+                    await _migrate_player_to_node(original_node)
+            except Exception:
+                pass
+
+            try:
+                player._unavailable_failover_attempts = tried
+            except Exception:
+                pass
+
+            return False
+        finally:
+            try:
+                setattr(guild, "_node_failover_inflight", False)
+            except Exception:
+                pass
 
     def _should_reconnect_warp(self, track_title: str | None, severity: Any, message: Any) -> bool:
         """Confere se o erro atual deve disparar o script de reconexao do WARP."""
@@ -1417,6 +1938,10 @@ class MusicBot(commands.Bot):
         # Desconecta do canal de voz
         try:
             if getattr(player, "connected", False) or getattr(player, "channel", None):
+                try:
+                    self._clear_session_node_affinity(getattr(player.guild, "id", None))
+                except Exception:
+                    pass
                 await player.disconnect()
                 guild_name = getattr(player.guild, "name", "Desconhecido")
                 print(f"Desconectado do canal de voz após finalizar fila no servidor: {guild_name}")
@@ -1785,8 +2310,12 @@ class MusicBot(commands.Bot):
             return "ytmusic"
         if match("youtube") or match("youtu.be"):
             return "youtube"
+        if match("deezer"):
+            return "deezer"
         if match("spotify"):
             return "spotify"
+        if match("apple") or match("applemusic"):
+            return "applemusic"
         if match("soundcloud"):
             return "soundcloud"
         if match("twitch"):
@@ -1799,7 +2328,9 @@ class MusicBot(commands.Bot):
         icons = {
             "ytmusic": "<:ytmusic:1446620983267037395>",
             "youtube": "<:youtube:1446621413179002991>",
+            "deezer": "<:deezer:1448437794090520658>",
             "spotify": "<:spotify:1446621523631931423>",
+            "applemusic": "<:apple_music:1448505821142061210>",
             "soundcloud": "<:soundcloud:1446621634294452275>",
             "twitch": "<:twitch:1446621864787968163>",
         }
@@ -1814,7 +2345,9 @@ class MusicBot(commands.Bot):
         colors = {
             "ytmusic": 0xFF0050,
             "youtube": 0xFF0000,
+            "deezer": 0xFF9900,
             "spotify": 0x1DB954,
+            "applemusic": 0xFA2D48,
             "soundcloud": 0xFF5500,
             "twitch": 0x9146FF,
         }
@@ -2012,6 +2545,10 @@ class MusicBot(commands.Bot):
             guild_id=guild_id,
             default="Use os botões abaixo para controlar a reprodução",
         )
+
+        node_name = self._get_node_display_name(getattr(player, "node", None))
+        if node_name:
+            footer_text = f"{node_name} • {footer_text}"
         embed.set_footer(text=footer_text)
 
         return embed
