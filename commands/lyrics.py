@@ -60,6 +60,10 @@ class LyricsStopView(discord.ui.View):
 
     async def on_timeout(self):
         # Remove automaticamente após timeout
+        try:
+            self.lyrics_cog._cancel_sync_task(self.guild_id)
+        except Exception:
+            pass
         if self.channel_id in self.lyrics_cog._active_lyrics_channels:
             self.lyrics_cog._active_lyrics_channels.pop(self.channel_id, None)
 
@@ -72,6 +76,10 @@ class LyricsCommands(commands.Cog):
 
     def _translate(self, interaction, key, default="Translation missing", **kwargs):
         return self.bot.translate(key, guild_id=interaction.guild_id, default=default, **kwargs)
+    
+    def cleanup_guild_lyrics(self, guild_id: int) -> None:
+        """Limpa letras ativas quando o bot desconecta do servidor."""
+        self._cancel_sync_task(guild_id)
 
     async def fetch_lyrics(self, player: wavelink.Player, track: wavelink.Playable) -> dict | None:
         return await self._fetch_from_lrclib(track)
@@ -422,19 +430,49 @@ class LyricsCommands(commands.Cog):
         # Verifica se já há letras ativas neste canal
         channel_id = interaction.channel_id
         if not ephemeral and channel_id in self._active_lyrics_channels:
-            warning_message = self._translate(
-                interaction,
-                "commands.lyrics.warnings.already_active",
-                default="⚠️ Já há letras sendo exibidas neste canal.",
-            )
+            # Verifica se a tarefa de sync realmente existe e está rodando
+            guild_id = self._active_lyrics_channels[channel_id]
+            sync_task = self._sync_tasks.get(guild_id)
+
+            # Se a "sessão" é do mesmo servidor, preferimos auto-recuperar:
+            # cancela o sync anterior e permite reiniciar as letras no mesmo canal.
+            if interaction.guild_id is not None and guild_id == interaction.guild_id:
+                try:
+                    self._cancel_sync_task(guild_id)
+                except Exception:
+                    pass
+                self._active_lyrics_channels.pop(channel_id, None)
+                sync_task = None
+
+            # Se o bot nem está mais em voz, limpa estado preso
             try:
-                if interaction.response.is_done():
-                    await interaction.followup.send(warning_message, ephemeral=True)
-                else:
-                    await interaction.response.send_message(warning_message, ephemeral=True)
-            except (discord.NotFound, discord.HTTPException):
+                guild = interaction.guild
+                voice_client = getattr(guild, "voice_client", None) if guild else None
+                if voice_client is None or not getattr(voice_client, "connected", False):
+                    self._active_lyrics_channels.pop(channel_id, None)
+                    self._cancel_sync_task(guild_id)
+                    sync_task = None
+            except Exception:
                 pass
-            return
+            
+            # Se não há tarefa ou a tarefa já terminou, limpa o canal da lista
+            if sync_task is None or sync_task.done():
+                self._active_lyrics_channels.pop(channel_id, None)
+            else:
+                # Tarefa realmente existe e está ativa, mostra aviso
+                warning_message = self._translate(
+                    interaction,
+                    "commands.lyrics.warnings.already_active",
+                    default="⚠️ Já há letras sendo exibidas neste canal.",
+                )
+                try:
+                    if interaction.response.is_done():
+                        await interaction.followup.send(warning_message, ephemeral=True)
+                    else:
+                        await interaction.response.send_message(warning_message, ephemeral=True)
+                except (discord.NotFound, discord.HTTPException):
+                    pass
+                return
 
         resolved_player: wavelink.Player | None = player or guild.voice_client
         current_track = getattr(resolved_player, "current", None)
@@ -588,12 +626,21 @@ class LyricsCommands(commands.Cog):
             return
 
         last_index: int | None = None
+        consecutive_edit_failures = 0
         was_cancelled = False
 
         try:
             while True:
                 current_track = getattr(player, "current", None)
                 if not current_track or current_track.identifier != track.identifier:
+                    break
+
+                # Se o bot desconectou do canal de voz, encerra o sync
+                if not getattr(player, "connected", True):
+                    break
+
+                # Se não está mais tocando (fila acabou/desconectou), encerra o sync
+                if not getattr(player, "playing", True) and not getattr(player, "paused", False):
                     break
 
                 position_ms = getattr(player, "position", 0) or 0
@@ -605,10 +652,14 @@ class LyricsCommands(commands.Cog):
                         embed = self._create_embed(interaction, track, lyrics_data, snippet)
                         try:
                             await message.edit(embed=embed)
+                            consecutive_edit_failures = 0
                         except discord.NotFound:
                             break
                         except discord.HTTPException as exc:
                             print(f"Não foi possível atualizar letra sincronizada: {exc}")
+                            consecutive_edit_failures += 1
+                            if consecutive_edit_failures >= 3:
+                                break
                         last_index = current_index
 
                 await asyncio.sleep(1)
