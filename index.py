@@ -456,6 +456,14 @@ class MusicBot(commands.Bot):
                 self._clear_session_node_affinity(guild_id)
             except Exception:
                 pass
+            
+            # Limpa letras ativas quando desconecta
+            try:
+                lyrics_cog = self.get_cog("LyricsCommands")
+                if lyrics_cog:
+                    lyrics_cog.cleanup_guild_lyrics(guild_id)
+            except Exception:
+                pass
             if player is not None:
                 player.afk_pause_active = False
 
@@ -639,6 +647,11 @@ class MusicBot(commands.Bot):
                 try:
                     await player.disconnect(force=True)
                     print(f"✅ Player da guild {guild_id} desconectado com sucesso")
+                    
+                    # Limpa letras ativas quando node cai
+                    lyrics_cog = self.get_cog("LyricsCommands")
+                    if lyrics_cog and guild:
+                        lyrics_cog.cleanup_guild_lyrics(guild.id)
                 except Exception as exc:
                     print(f"⚠️ Erro ao desconectar player: {exc}")
         except Exception as e:
@@ -1938,13 +1951,22 @@ class MusicBot(commands.Bot):
         # Desconecta do canal de voz
         try:
             if getattr(player, "connected", False) or getattr(player, "channel", None):
+                guild_id = getattr(player.guild, "id", None)
                 try:
-                    self._clear_session_node_affinity(getattr(player.guild, "id", None))
+                    self._clear_session_node_affinity(guild_id)
                 except Exception:
                     pass
                 await player.disconnect()
                 guild_name = getattr(player.guild, "name", "Desconhecido")
                 print(f"Desconectado do canal de voz após finalizar fila no servidor: {guild_name}")
+                
+                # Limpa letras ativas quando fila acaba
+                try:
+                    lyrics_cog = self.get_cog("LyricsCommands")
+                    if lyrics_cog and guild_id:
+                        lyrics_cog.cleanup_guild_lyrics(guild_id)
+                except Exception:
+                    pass
         except Exception as e:
             print(f"Erro ao desconectar após finalizar fila: {e}")
 
