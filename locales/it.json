@@ -693,6 +693,11 @@
     },
     "lavalink": {
       "details": "Nodo: {node}"
+    },
+    "admin": {
+      "errors": {
+        "no_permission": "❌ Non hai il permesso di usare questo comando."
+      }
     }
   }
 }
