@@ -141,34 +141,6 @@ class AdminCommands(commands.Cog):
 
     # Grupo /admin
     admin = app_commands.Group(name="admin", description="Bot management (owner only)")
-    
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        """Check global do Cog - só permite owners"""
-        if interaction.user is None:
-            return False
-        
-        owner_ids = getattr(self.bot, "owner_ids", set())
-        if not owner_ids:
-            # Fallback para owner_id único
-            owner_id = getattr(self.bot, "owner_id", None)
-            if owner_id:
-                owner_ids = {owner_id}
-        
-        is_owner = interaction.user.id in owner_ids
-        
-        if not is_owner:
-            # Responde com mensagem invisível
-            try:
-                if not interaction.response.is_done():
-                    await interaction.response.send_message(
-                        "❌ Você não tem permissão para usar este comando.",
-                        ephemeral=True
-                    )
-            except:
-                pass
-            return False
-        
-        return True
 
     def _translate(
         self,
@@ -866,6 +838,7 @@ class AdminCommands(commands.Cog):
             app_commands.Choice(name="Check Status", value="status"),
         ]
     )
+    @app_commands.check(is_admin)
     async def restart(
         self,
         interaction: discord.Interaction,
@@ -1012,6 +985,7 @@ class AdminCommands(commands.Cog):
                 await asyncio.sleep(10)
 
     @admin.command(name="nodes", description="Show detailed information about all Lavalink nodes (owners only)")
+    @app_commands.check(is_admin)
     async def nodes(self, interaction: discord.Interaction):
         """Mostra informações técnicas detalhadas de todos os nodes Lavalink"""
         try:
