@@ -7,6 +7,8 @@ import asyncio
 import logging
 import sys
 import json
+import argparse
+import aiohttp
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, parse_qs
@@ -26,6 +28,11 @@ from commands.logger import BotLogger
 # Carrega variáveis de ambiente
 load_dotenv()
 
+# Parse argumentos de linha de comando
+parser = argparse.ArgumentParser(description='Music Bot com suporte a proxy')
+parser.add_argument('--proxy', type=str, help='Proxy SOCKS5/HTTP (ex: socks5://127.0.0.1:40000)', default=None)
+args = parser.parse_args()
+
 # Logs
 logging.basicConfig(level=logging.INFO)
 # Silencia aviso sobre message_content ausente (slash-only não precisa)
@@ -33,13 +40,22 @@ logging.getLogger("discord.ext.commands.bot").setLevel(logging.ERROR)
 
 
 class MusicBot(commands.Bot):
-    def __init__(self):
+    def __init__(self, proxy: str | None = None):
         # Intents mínimos (SEM privilegiadas)
         intents = discord.Intents.none()  # começa com tudo False
         intents.guilds = True             # necessário para slash
         intents.voice_states = True       # necessário para tocar entrar/sair de voz
 
-        super().__init__(command_prefix="!", intents=intents, help_command=None)
+        # Configurar proxy (discord.py cria o connector automaticamente)
+        if proxy:
+            print(f"🌐 Usando proxy: {proxy}")
+        
+        super().__init__(
+            command_prefix="!", 
+            intents=intents, 
+            help_command=None,
+            proxy=proxy
+        )
         self.synced = False
         # Guarda configs do Lavalink para possíveis reconexões
         self._lavalink_cfgs = []
@@ -68,6 +84,12 @@ class MusicBot(commands.Bot):
         # Afinidade de node por sessão (por guild): usada para manter o mesmo node após failover
         # enquanto o bot permanecer conectado na call. Não é persistido.
         self._session_node_affinity: dict[int, str] = {}
+        # Lista negra temporária: nodes que falharam recentemente e não devem ser reconectados pelo watchdog por um tempo
+        self._node_blacklist: dict[str, float] = {}  # node_id -> timestamp quando expira
+        # Rastreamento de uptime dos nodes (timestamps de quando conectaram)
+        self._node_connected_at: dict[str, float] = {}  # node_id -> timestamp quando conectou
+        # Rastreamento de downtime dos nodes (timestamps de quando desconectaram)
+        self._node_disconnected_at: dict[str, float] = {}  # node_id -> timestamp quando desconectou
 
         if not self.owner_ids:
             print("Aviso: BOT_OWNER_IDS não definidos. Comandos de administrador do bot ficarão indisponíveis.")
@@ -661,6 +683,12 @@ class MusicBot(commands.Bot):
         node = payload.node
         print(f"Nó Lavalink '{node.identifier}' está pronto!")
         
+        # Registra timestamp de conexão para tracking de uptime
+        import time
+        self._node_connected_at[node.identifier] = time.time()
+        # Remove timestamp de desconexão se existir
+        self._node_disconnected_at.pop(node.identifier, None)
+        
         # Quando um nó reconecta, limpa sessões antigas dos players
         # Isso força o rebuild na próxima interação, evitando o bug de "entrar e sair da call"
         try:
@@ -725,7 +753,7 @@ class MusicBot(commands.Bot):
         configs: list[dict[str, str | bool]] = []
         self._lavalink_cfgs = []
 
-        for idx in range(1, 4):
+        for idx in range(1, 11):  # Suporta até 10 nodes (NODE1 até NODE10)
             host = (os.getenv(f"LAVALINK_NODE{idx}_HOST", "") or "").strip()
             if not host:
                 continue
@@ -813,22 +841,49 @@ class MusicBot(commands.Bot):
                     print(f"Nó {identifier}: {uri} • status={status_name}")
 
     async def mark_node_as_failed(self, node_identifier: str) -> None:
-        """Marca um nó como falho e o remove do pool (não tenta reconectar)."""
-        print(f"⚠️ Marcando nó {node_identifier} como falho...")
+        """Marca um nó como falho e o remove do pool (não tenta reconectar por 2 minutos)."""
+        # Adiciona à lista negra temporária (120 segundos = 2 minutos)
+        import time
+        blacklist_duration = 120.0
+        self._node_blacklist[node_identifier] = asyncio.get_event_loop().time() + blacklist_duration
+        print(f"🚫 Node {node_identifier} na lista negra por {int(blacklist_duration)}s (watchdog não tentará reconectar)")
         
-        # Apenas fecha o nó sem tentar reconectar
+        # Registra timestamp de desconexão para tracking de downtime
+        self._node_disconnected_at[node_identifier] = time.time()
+        # Remove timestamp de conexão se existir
+        self._node_connected_at.pop(node_identifier, None)
+        
+        # Verifica se tem players ativos antes de fechar
         try:
             node = wavelink.Pool.get_node(node_identifier)
-            print(f"🔌 Desconectando nó {node_identifier} (watchdog tentará reconectar depois)...")
-            await node.close(eject=True)
-            print(f"✅ Nó {node_identifier} removido do pool. Próximas conexões usarão outros nodes.")
+            active_players = len(node.players) if hasattr(node, 'players') else 0
+            
+            if active_players > 0:
+                print(f"⚠️ Node {node_identifier} tem {active_players} player(s) ativo(s) - não fechando (apenas na blacklist)")
+                # Deixa tocar até terminar naturalmente, mas não aceita novos players
+                return
+            else:
+                print(f"🔌 Desconectando nó {node_identifier}...")
+                await node.close(eject=True)
+                print(f"✅ Nó {node_identifier} removido do pool.")
         except wavelink.InvalidNodeException:
-            print(f"ℹ️ Nó {node_identifier} já não está no pool.")
+            pass  # Node já foi removido
         except Exception as exc:
             print(f"⚠️ Erro ao fechar nó {node_identifier}: {exc}")
 
     async def reconnect_specific_node(self, node_identifier: str) -> bool:
         """Reconecta um nó específico sem afetar os outros (usado pelo watchdog)."""
+        # Verifica se o node está na lista negra
+        current_time = asyncio.get_event_loop().time()
+        blacklist_expiry = self._node_blacklist.get(node_identifier, 0)
+        
+        if current_time < blacklist_expiry:
+            # Node ainda está na lista negra, não tenta reconectar
+            return False
+        
+        # Remove da lista negra se expirou
+        self._node_blacklist.pop(node_identifier, None)
+        
         # Fecha apenas o nó específico se ainda existir
         try:
             node = wavelink.Pool.get_node(node_identifier)
@@ -950,6 +1005,15 @@ class MusicBot(commands.Bot):
             print("❌ Nenhum nó foi reconectado após aguardar.")
             return False
 
+    async def _health_check_node(self, node: wavelink.Node, timeout: float = 10.0) -> bool:
+        """Faz um health check leve em um node para verificar se está realmente respondendo."""
+        try:
+            # Tenta buscar stats do node com timeout curto
+            await asyncio.wait_for(node.fetch_stats(), timeout=timeout)
+            return True
+        except (asyncio.TimeoutError, wavelink.LavalinkException, Exception):
+            return False
+
     async def ensure_lavalink_connected(self) -> bool:
         """Valida a conexão com os nós Lavalink e tenta reconectar se necessário."""
         # Primeiro verifica se já existe algum nó conectado
@@ -962,20 +1026,40 @@ class MusicBot(commands.Bot):
                 node = wavelink.Pool.get_node(identifier)
             except wavelink.InvalidNodeException:
                 pending_identifiers.append(identifier)
+                # Registra timestamp de desconexão se ainda não foi registrado
+                if identifier not in self._node_disconnected_at:
+                    import time
+                    self._node_disconnected_at[identifier] = time.time()
+                    self._node_connected_at.pop(identifier, None)
                 continue
 
             if node.status == wavelink.NodeStatus.CONNECTED:
                 connected_nodes.append(node)
             else:
                 pending_identifiers.append(identifier)
+                # Registra timestamp de desconexão se ainda não foi registrado
+                if identifier not in self._node_disconnected_at:
+                    import time
+                    self._node_disconnected_at[identifier] = time.time()
+                    self._node_connected_at.pop(identifier, None)
 
         # Se já existe pelo menos um nó conectado, tenta reconectar os pendentes em background
         if connected_nodes:
             if pending_identifiers:
-                print(f"🔄 Tentando reconectar nós pendentes em background: {', '.join(pending_identifiers)}")
-                # Tenta reconectar cada node pendente sem bloquear
-                for pending_id in pending_identifiers:
-                    asyncio.create_task(self.reconnect_specific_node(pending_id))
+                # Filtra nodes que não estão na blacklist
+                current_time = asyncio.get_event_loop().time()
+                nodes_to_reconnect = [
+                    pid for pid in pending_identifiers
+                    if current_time >= self._node_blacklist.get(pid, 0)
+                ]
+                
+                if nodes_to_reconnect:
+                    print(f"🔄 Tentando reconectar nós pendentes em background: {', '.join(nodes_to_reconnect)}")
+                    # Tenta reconectar cada node pendente sem bloquear
+                    for pending_id in nodes_to_reconnect:
+                        asyncio.create_task(self.reconnect_specific_node(pending_id))
+                elif pending_identifiers:
+                    pass  # Nodes blacklistados, não reconectar ainda
             return True
 
         # Se não há nenhum nó conectado, tenta conectar
@@ -1042,6 +1126,7 @@ class MusicBot(commands.Bot):
     async def _lavalink_watchdog(self):
         """Tarefa em background que mantém a conexão ativa e tenta reconectar quando necessário."""
         await self.wait_until_ready()
+        last_health_check = 0
         while not self.is_closed():
             try:
                 ok = await self.ensure_lavalink_connected()
@@ -1049,6 +1134,35 @@ class MusicBot(commands.Bot):
                     # Aguarda um pouco antes de tentar novamente para evitar loop agressivo
                     await asyncio.sleep(15)
                 else:
+                    # Health check periódico (a cada 30 segundos quando não há nodes pendentes)
+                    import time
+                    current_time = time.time()
+                    # Ping a cada 30s usando /stats (universal, todos Lavalink suportam)
+                    if current_time - last_health_check >= 30:
+                        for cfg in self._lavalink_cfgs:
+                            identifier = cfg["id"]
+                            
+                            # Pula nodes que estão na blacklist
+                            blacklist_expiry = self._node_blacklist.get(identifier, 0)
+                            if current_time < blacklist_expiry:
+                                continue
+                            
+                            try:
+                                node = wavelink.Pool.get_node(identifier)
+                                if node.status == wavelink.NodeStatus.CONNECTED:
+                                    # Ping com /stats (universal, funciona em todos Lavalink)
+                                    try:
+                                        await asyncio.wait_for(node.fetch_stats(), timeout=8.0)
+                                    except (asyncio.TimeoutError, Exception):
+                                        print(f"❌ Node {identifier} não respondeu ao ping - marcando como failed")
+                                        await self.mark_node_as_failed(identifier)
+                            except wavelink.InvalidNodeException:
+                                pass  # Node não existe no pool
+                            except Exception as exc:
+                                print(f"⚠️ Erro ao verificar node {identifier}: {exc}")
+                        
+                        last_health_check = current_time
+                    
                     # Verifica se há nodes pendentes para ajustar intervalo
                     pending_count = 0
                     for cfg in self._lavalink_cfgs:
@@ -1059,8 +1173,8 @@ class MusicBot(commands.Bot):
                         except wavelink.InvalidNodeException:
                             pending_count += 1
                     
-                    # Se há nodes pendentes, checa mais frequentemente (15s), senão usa intervalo normal (60s)
-                    check_interval = 15 if pending_count > 0 else 60
+                    # Se há nodes pendentes, checa mais frequentemente (15s), senão usa intervalo normal (30s para health check)
+                    check_interval = 15 if pending_count > 0 else 30
                     await asyncio.sleep(check_interval)
             except asyncio.CancelledError:
                 break
@@ -1099,7 +1213,23 @@ class MusicBot(commands.Bot):
                     logging.exception("Erro no painel do console", exc_info=e)
                     await asyncio.sleep(5)
 
+    def _format_duration(self, seconds: float) -> str:
+        """Formata duração em segundos para formato legível (ex: 2h 30m, 45s)"""
+        if seconds < 60:
+            return f"{int(seconds)}s"
+        elif seconds < 3600:
+            minutes = int(seconds / 60)
+            secs = int(seconds % 60)
+            return f"{minutes}m {secs}s"
+        else:
+            hours = int(seconds / 3600)
+            minutes = int((seconds % 3600) / 60)
+            return f"{hours}h {minutes}m"
+
     def _generate_panel_content(self) -> str:
+        import time
+        current_time = time.time()
+        
         total_calls = len(self.voice_clients)
         total_playing = sum(1 for vc in self.voice_clients if getattr(vc, "playing", False))
 
@@ -1109,9 +1239,10 @@ class MusicBot(commands.Bot):
             status_icon = "🔴"
             call_count = 0
             playing_count = 0
+            time_info = ""
 
-            if node:
-                status_icon = "🟢" if node.status == wavelink.NodeStatus.CONNECTED else "🔴"
+            if node and node.status == wavelink.NodeStatus.CONNECTED:
+                status_icon = "🟢"
                 players = getattr(node, "players", {}) or {}
                 if isinstance(players, dict):
                     call_count = len(players)
@@ -1119,8 +1250,30 @@ class MusicBot(commands.Bot):
                 elif isinstance(players, (list, tuple, set)):
                     call_count = len(players)
                     playing_count = sum(1 for p in players if getattr(p, "playing", False))
+                
+                # Uptime do node
+                connected_at = self._node_connected_at.get(node_id)
+                if connected_at:
+                    uptime = current_time - connected_at
+                    time_info = f" | uptime: {self._format_duration(uptime)}"
+            else:
+                # Node offline - mostrar downtime e tempo restante na blacklist
+                disconnected_at = self._node_disconnected_at.get(node_id)
+                blacklist_expiry = self._node_blacklist.get(node_id, 0)
+                
+                time_parts = []
+                if disconnected_at:
+                    downtime = current_time - disconnected_at
+                    time_parts.append(f"offline: {self._format_duration(downtime)}")
+                
+                if blacklist_expiry > current_time:
+                    remaining = blacklist_expiry - current_time
+                    time_parts.append(f"blacklist: {self._format_duration(remaining)}")
+                
+                if time_parts:
+                    time_info = f" | {' | '.join(time_parts)}"
 
-            node_lines.append(f"{node_id}: {status_icon} calls={call_count} tocando={playing_count}")
+            node_lines.append(f"{node_id}: {status_icon} calls={call_count} tocando={playing_count}{time_info}")
 
         if self._lavalink_cfgs:
             seen_ids: set[str] = set()
@@ -2765,7 +2918,7 @@ class MusicBot(commands.Bot):
         await self.change_presence(status=status, activity=activity)
 
 
-bot = MusicBot()
+bot = MusicBot(proxy=args.proxy)
 
 if __name__ == "__main__":
     token = os.getenv("DISCORD_TOKEN")
