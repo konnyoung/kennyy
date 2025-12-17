@@ -112,6 +112,7 @@
       }
     },
     "play": {
+      "searching": "Pesquisando...",
       "volume": {
         "decrease": {
           "title": "🔉 Volume Diminuído"
@@ -190,7 +191,11 @@
       },
       "errors": {
         "user_not_in_voice": "Você precisa estar em um canal de voz!",
-  "same_voice_channel": "Você precisa estar no mesmo canal de voz que o bot para usar estes controles!",
+        "same_voice_channel": "Você precisa estar no mesmo canal de voz que o bot para usar estes controles!",
+        "no_view_permission": "Não tenho permissão para **ver** o canal de voz que você está!",
+        "no_connect_permission": "Não tenho permissão para **conectar** no canal de voz que você está!",
+        "no_speak_permission": "Não tenho permissão para **falar** no canal de voz que você está!",
+        "channel_label": "Canal",
         "lavalink_validation": "Não foi possível validar a conexão com o Lavalink: {error}",
         "lavalink_unavailable": {
           "title": "🔧 Servidor temporariamente indisponível",
@@ -444,6 +449,10 @@
       "buttons": {
         "bass_boost": {
           "label": "Bass Boost",
+          "select_level": "🎵 Selecione o nível de Bass Boost:",
+          "activated_low": "🔉 Bass Boost ativado (nível baixo)!",
+          "activated_medium": "🔊 Bass Boost ativado (nível médio)!",
+          "activated_high": "📢 Bass Boost ativado (nível alto)!",
           "activated": "🎵 Bass Boost ativado (nível médio)!",
           "deactivated": "🎵 Bass Boost desativado!",
           "error": "❌ Erro ao aplicar bass boost: {error}"

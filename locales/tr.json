@@ -99,6 +99,7 @@
       }
     },
     "play": {
+      "searching": "Aranıyor...",
       "volume": {
         "decrease": {
           "title": "🔉 Sesi Kıs"
@@ -177,7 +178,11 @@
       },
       "errors": {
         "user_not_in_voice": "Ses kanalında olmalısınız!",
-  "same_voice_channel": "Kontrolleri kullanmak için bot ile aynı ses kanalında olmalısınız!",
+        "same_voice_channel": "Kontrolleri kullanmak için bot ile aynı ses kanalında olmalısınız!",
+        "no_view_permission": "Bulunduğunuz sesli kanalı **görme** iznim yok!",
+        "no_connect_permission": "Bulunduğunuz sesli kanala **bağlanma** iznim yok!",
+        "no_speak_permission": "Bulunduğunuz sesli kanalda **konuşma** iznim yok!",
+        "channel_label": "Kanal",
         "lavalink_validation": "Lavalink bağlantısı doğrulanamadı: {error}",
         "lavalink_unavailable": {
           "title": "🔧 Sunucu geçici olarak kullanılamıyor",
@@ -431,6 +436,10 @@
       "buttons": {
         "bass_boost": {
           "label": "Bass Boost",
+          "select_level": "🎵 Bass Boost seviyesini seçin:",
+          "activated_low": "🔉 Bass Boost aktif! (düşük seviye)!",
+          "activated_medium": "🔊 Bass Boost aktif! (orta seviye)!",
+          "activated_high": "📢 Bass Boost aktif! (yüksek seviye)!",
           "activated": "🎵 Bass Boost Aktif! (orta seviye)!",
           "deactivated": "🎵 Bass Boost Kapatıldı!",
           "error": "❌ Bass Boost uygulanırken bir sorun oluştu: {error}"

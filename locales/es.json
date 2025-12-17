@@ -112,6 +112,7 @@
       }
     },
     "play": {
+      "searching": "Buscando...",
       "volume": {
         "decrease": {
           "title": "🔉 Bajar Volumen"
@@ -190,7 +191,10 @@
       },
       "errors": {
         "user_not_in_voice": "¡Necesitas estar en un canal de voz!",
-        "same_voice_channel": "¡Necesitas estar en el mismo canal de voz que el bot para usar estos controles!",
+        "same_voice_channel": "¡Necesitas estar en el mismo canal de voz que el bot para usar estos controles!",        "no_view_permission": "¡No tengo permiso para **ver** el canal de voz en el que estás!",
+        "no_connect_permission": "¡No tengo permiso para **conectar** al canal de voz en el que estás!",
+        "no_speak_permission": "¡No tengo permiso para **hablar** en el canal de voz en el que estás!",
+        "channel_label": "Canal",
         "lavalink_validation": "No pude validar la conexión de Lavalink: {error}",
         "lavalink_unavailable": {
           "title": "🔧 Servidor temporalmente no disponible",
@@ -444,6 +448,10 @@
       "buttons": {
         "bass_boost": {
           "label": "Aumento de Graves",
+          "select_level": "🎵 Selecciona el nivel de Aumento de Graves:",
+          "activated_low": "🔉 ¡Aumento de graves activado (nivel bajo)!",
+          "activated_medium": "🔊 ¡Aumento de graves activado (nivel medio)!",
+          "activated_high": "📢 ¡Aumento de graves activado (nivel alto)!",
           "activated": "🎵 ¡Aumento de graves activado (nivel medio)!",
           "deactivated": "🎵 ¡Aumento de graves desactivado!",
           "error": "❌ Error al aplicar aumento de graves: {error}"

@@ -112,6 +112,7 @@
       }
     },
     "play": {
+      "searching": "検索中...",
       "volume": {
         "decrease": {
           "title": "🔉 音量を下げました"
@@ -190,7 +191,10 @@
       },
       "errors": {
         "user_not_in_voice": "ボイスチャンネルに参加してください！",
-        "same_voice_channel": "これらの操作を使うには、ボットと同じボイスチャンネルにいる必要があります！",
+        "same_voice_channel": "これらの操作を使うには、ボットと同じボイスチャンネルにいる必要があります！",        "no_view_permission": "あなたがいるボイスチャンネルを**表示**する権限がありません！",
+        "no_connect_permission": "あなたがいるボイスチャンネルに**接続**する権限がありません！",
+        "no_speak_permission": "あなたがいるボイスチャンネルで**話す**権限がありません！",
+        "channel_label": "チャンネル",
         "lavalink_validation": "Lavalink の接続を確認できませんでした: {error}",
         "lavalink_unavailable": {
           "title": "🔧 サーバーが一時的に利用できません",
@@ -444,6 +448,10 @@
       "buttons": {
         "bass_boost": {
           "label": "バスブースト",
+          "select_level": "🎵 バスブーストのレベルを選択してください：",
+          "activated_low": "🔉 バスブースト（弱）を有効にしました！",
+          "activated_medium": "🔊 バスブースト（中）を有効にしました！",
+          "activated_high": "📢 バスブースト（強）を有効にしました！",
           "activated": "🎵 バスブースト（中）を有効にしました！",
           "deactivated": "🎵 バスブーストを無効にしました！",
           "error": "❌ バスブーストの適用中にエラー: {error}"

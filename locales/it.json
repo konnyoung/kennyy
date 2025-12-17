@@ -112,6 +112,7 @@
       }
     },
     "play": {
+      "searching": "Ricerca in corso...",
       "volume": {
         "decrease": {
           "title": "🔉 Abbassa Volume"
@@ -190,7 +191,10 @@
       },
       "errors": {
         "user_not_in_voice": "Devi essere in un canale vocale!",
-        "same_voice_channel": "Devi essere nello stesso canale vocale del bot per usare questi controlli!",
+        "same_voice_channel": "Devi essere nello stesso canale vocale del bot per usare questi controlli!",        "no_view_permission": "Non ho il permesso di **vedere** il canale vocale in cui ti trovi!",
+        "no_connect_permission": "Non ho il permesso di **connettermi** al canale vocale in cui ti trovi!",
+        "no_speak_permission": "Non ho il permesso di **parlare** nel canale vocale in cui ti trovi!",
+        "channel_label": "Canale",
         "lavalink_validation": "Non sono riuscito a validare la connessione Lavalink: {error}",
         "lavalink_unavailable": {
           "title": "🔧 Server temporaneamente non disponibile",
@@ -444,6 +448,10 @@
       "buttons": {
         "bass_boost": {
           "label": "Aumento Bassi",
+          "select_level": "🎵 Seleziona il livello di Aumento Bassi:",
+          "activated_low": "🔉 Aumento bassi attivato (livello basso)!",
+          "activated_medium": "🔊 Aumento bassi attivato (livello medio)!",
+          "activated_high": "📢 Aumento bassi attivato (livello alto)!",
           "activated": "🎵 Aumento bassi attivato (livello medio)!",
           "deactivated": "🎵 Aumento bassi disattivato!",
           "error": "❌ Errore nell'applicazione dell'aumento bassi: {error}"

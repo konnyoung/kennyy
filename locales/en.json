@@ -112,6 +112,7 @@
       }
     },
     "play": {
+      "searching": "Searching...",
       "volume": {
         "decrease": {
           "title": "🔉 Volume Down"
@@ -190,7 +191,10 @@
       },
       "errors": {
         "user_not_in_voice": "You need to be in a voice channel!",
-  "same_voice_channel": "You need to be in the same voice channel as the bot to use these controls!",
+  "same_voice_channel": "You need to be in the same voice channel as the bot to use these controls!",        "no_view_permission": "I don't have permission to **view** the voice channel you're in!",
+        "no_connect_permission": "I don't have permission to **connect** to the voice channel you're in!",
+        "no_speak_permission": "I don't have permission to **speak** in the voice channel you're in!",
+        "channel_label": "Channel",
         "lavalink_validation": "Couldn't validate the Lavalink connection: {error}",
         "lavalink_unavailable": {
           "title": "🔧 Server temporarily unavailable",
@@ -444,6 +448,10 @@
       "buttons": {
         "bass_boost": {
           "label": "Bass Boost",
+          "select_level": "🎵 Select the Bass Boost level:",
+          "activated_low": "🔉 Bass Boost activated (low level)!",
+          "activated_medium": "🔊 Bass Boost activated (medium level)!",
+          "activated_high": "📢 Bass Boost activated (high level)!",
           "activated": "🎵 Bass Boost activated (medium level)!",
           "deactivated": "🎵 Bass Boost deactivated!",
           "error": "❌ Error applying bass boost: {error}"
