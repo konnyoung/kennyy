@@ -1,9 +1,0 @@
-{
-  "name": "discord-music-bot",
-  "version": "1.0.0",
-  "description": "Bot de música para Discord usando Lavalink",
-  "main": "index.py",
-  "scripts": {
-    "start": "python index.py"
-  }
-}
