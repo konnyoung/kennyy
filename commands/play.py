@@ -1035,6 +1035,19 @@ class PlayCommands(commands.Cog):
             ) as exc:
                 last_error = exc
                 
+                # Verifica se o erro é realmente de permissão (não timeout do node)
+                is_permission_error = False
+                error_msg = str(exc).lower()
+                
+                if "permission" in error_msg or "forbidden" in error_msg:
+                    is_permission_error = True
+                    print(f"⚠️ Erro de permissão detectado ao conectar: {exc}")
+                
+                # Se for erro de permissão, não marca node como falho
+                if is_permission_error:
+                    await self._cleanup_failed_voice_connection(interaction.guild)
+                    raise RuntimeError(f"Sem permissão para conectar ao canal de voz: {exc}")
+                
                 # Tenta identificar qual node causou o timeout através do voice_client parcial
                 try:
                     guild = interaction.guild
@@ -1066,7 +1079,7 @@ class PlayCommands(commands.Cog):
                     except Exception:
                         pass
                 
-                # Marca o node como falho
+                # Marca o node como falho apenas se NÃO for erro de permissão
                 if attempted_node_id:
                     try:
                         await self.bot.mark_node_as_failed(attempted_node_id)
@@ -1348,12 +1361,69 @@ class PlayCommands(commands.Cog):
             )
             return await interaction.response.send_message(embed=embed, ephemeral=True)
         
+        # Verifica permissões do bot no canal de voz
+        user_channel = interaction.user.voice.channel
+        bot_member = interaction.guild.me if interaction.guild else None
+        
+        if bot_member and user_channel:
+            permissions = user_channel.permissions_for(bot_member)
+            
+            if not permissions.view_channel:
+                embed = self._error_embed(
+                    interaction,
+                    "commands.common.embeds.error_title",
+                    "commands.play.errors.no_view_permission",
+                )
+                channel_label = self._translate(interaction, "commands.play.errors.channel_label", default="Channel")
+                embed.add_field(
+                    name=channel_label,
+                    value=user_channel.mention,
+                    inline=False
+                )
+                return await interaction.response.send_message(embed=embed, ephemeral=True)
+            
+            if not permissions.connect:
+                embed = self._error_embed(
+                    interaction,
+                    "commands.common.embeds.error_title",
+                    "commands.play.errors.no_connect_permission",
+                )
+                channel_label = self._translate(interaction, "commands.play.errors.channel_label", default="Channel")
+                embed.add_field(
+                    name=channel_label,
+                    value=user_channel.mention,
+                    inline=False
+                )
+                return await interaction.response.send_message(embed=embed, ephemeral=True)
+            
+            if not permissions.speak:
+                embed = self._error_embed(
+                    interaction,
+                    "commands.common.embeds.error_title",
+                    "commands.play.errors.no_speak_permission",
+                )
+                channel_label = self._translate(interaction, "commands.play.errors.channel_label", default="Channel")
+                embed.add_field(
+                    name=channel_label,
+                    value=user_channel.mention,
+                    inline=False
+                )
+                return await interaction.response.send_message(embed=embed, ephemeral=True)
+        
         # Defer somente após validação básica
         try:
             await interaction.response.defer()
         except (discord.NotFound, discord.HTTPException) as e:
             print(f"⚠️ Erro ao fazer defer: {e}")
             pass
+
+        # Envia embed de "Pesquisando..." IMEDIATAMENTE
+        searching_text = self._translate(interaction, "commands.play.searching", default="Searching...")
+        searching_embed = discord.Embed(
+            description=f"# <a:unadance:1450689460307230760> {searching_text}",
+            color=0x5284FF
+        )
+        searching_msg = await interaction.followup.send(embed=searching_embed)
 
         try:
             lavalink_ok = await self.bot.ensure_lavalink_connected()
@@ -1435,6 +1505,11 @@ class PlayCommands(commands.Cog):
                 is_url=is_url,
                 provider=provider,
             )
+            # Deleta mensagem de pesquisa após encontrar
+            try:
+                await searching_msg.delete()
+            except:
+                pass
         except Exception as e:
             # Se este comando acabou de conectar o bot (não havia voice_client),
             # não deixa ele preso na call quando a busca falha.
@@ -1588,13 +1663,6 @@ class PlayCommands(commands.Cog):
                         return await interaction.followup.send(embed=embed)
 
                     player.text_channel = interaction.channel
-                    confirmation = self._translate(
-                        interaction,
-                        "commands.play.start.playing_now",
-                        default="▶️ Tocando agora: **{title}**",
-                        title=track.title,
-                    )
-                    await interaction.followup.send(confirmation, ephemeral=True)
                 else:
                     # Adiciona à fila
                     await player.queue.put_wait(track)
