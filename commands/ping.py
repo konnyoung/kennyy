@@ -41,7 +41,7 @@ class Ping(commands.Cog):
         """Lê a configuração dos nós Lavalink direto do .env."""
         configs: list[dict] = []
 
-        for idx in range(1, 4):
+        for idx in range(1, 11):  # Suporta até 10 nodes (NODE1 até NODE10)
             host = (os.getenv(f"LAVALINK_NODE{idx}_HOST", "") or "").strip()
             if not host:
                 continue

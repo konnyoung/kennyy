@@ -50,6 +50,83 @@ BASSBOOST_LEVELS = {
 }
 
 
+class BassBoostLevelView(discord.ui.View):
+    """View para selecionar o nível de bass boost"""
+
+    def __init__(self, bot, player, parent_view, parent_button):
+        super().__init__(timeout=60)
+        self.bot = bot
+        self.player = player
+        self.parent_view = parent_view
+        self.parent_button = parent_button
+
+        guild = getattr(player, "guild", None)
+        self._guild_id = getattr(guild, "id", None)
+
+    def _translate(
+        self,
+        key: str,
+        *,
+        interaction: discord.Interaction | None = None,
+        default: str | None = None,
+        **kwargs,
+    ) -> str:
+        translator = getattr(self.bot, "translate", None)
+        guild_id = None
+        if interaction and interaction.guild:
+            guild_id = interaction.guild.id
+        elif self._guild_id is not None:
+            guild_id = self._guild_id
+        if translator:
+            return translator(key, guild_id=guild_id, default=default, **kwargs)
+        return default if default is not None else key
+
+    @discord.ui.button(emoji="🔉", label="Low", style=discord.ButtonStyle.secondary, row=0)
+    async def low_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para bass boost baixo"""
+        await self._apply_bassboost(interaction, "low", "🔉 Bass Boost ativado (nível baixo)!")
+
+    @discord.ui.button(emoji="🔊", label="Medium", style=discord.ButtonStyle.secondary, row=0)
+    async def medium_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para bass boost médio"""
+        await self._apply_bassboost(interaction, "medium", "🔊 Bass Boost ativado (nível médio)!")
+
+    @discord.ui.button(emoji="📢", label="High", style=discord.ButtonStyle.secondary, row=0)
+    async def high_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Botão para bass boost alto"""
+        await self._apply_bassboost(interaction, "high", "📢 Bass Boost ativado (nível alto)!")
+
+    async def _apply_bassboost(self, interaction: discord.Interaction, level: str, message: str):
+        """Aplica o bass boost com o nível selecionado"""
+        try:
+            filters = wavelink.Filters()
+            filters.equalizer.set(bands=BASSBOOST_LEVELS[level])
+
+            self.parent_view.active_filters.add("bass_boost")
+            self.parent_button.style = discord.ButtonStyle.primary
+
+            await self.player.set_filters(filters)
+            await interaction.response.edit_message(
+                content=self._translate(
+                    f"commands.filter.buttons.bass_boost.activated_{level}",
+                    interaction=interaction,
+                    default=message,
+                ),
+                view=None,
+            )
+
+        except Exception as e:
+            await interaction.response.edit_message(
+                content=self._translate(
+                    "commands.filter.buttons.bass_boost.error",
+                    interaction=interaction,
+                    default=f"❌ Erro ao aplicar bass boost: {e}",
+                    error=e,
+                ),
+                view=None,
+            )
+
+
 class FilterControlView(discord.ui.View):
     """View com botões de controle de filtros"""
 
@@ -108,20 +185,20 @@ class FilterControlView(discord.ui.View):
                     interaction=interaction,
                     default="🎵 Bass Boost desativado!",
                 )
+                await self.player.set_filters(filters)
+                await interaction.response.send_message(message, ephemeral=True)
             else:
-                filters = wavelink.Filters()
-                filters.equalizer.set(bands=BASSBOOST_LEVELS["medium"])
-
-                self.active_filters.add("bass_boost")
-                button.style = discord.ButtonStyle.primary
-                message = self._translate(
-                    "commands.filter.buttons.bass_boost.activated",
-                    interaction=interaction,
-                    default="🎵 Bass Boost ativado (nível médio)!",
+                # Mostrar seletor de nível
+                view = BassBoostLevelView(self.bot, self.player, self, button)
+                await interaction.response.send_message(
+                    self._translate(
+                        "commands.filter.buttons.bass_boost.select_level",
+                        interaction=interaction,
+                        default="🎵 Seleciona o nível de Bass Boost:",
+                    ),
+                    view=view,
+                    ephemeral=True,
                 )
-
-            await self.player.set_filters(filters)
-            await interaction.response.send_message(message, ephemeral=True)
 
         except Exception as e:
             if not interaction.response.is_done():

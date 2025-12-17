@@ -913,7 +913,6 @@ class PlayCommands(commands.Cog):
     ) -> None:
         guild = interaction.guild
         channel_name = getattr(channel, "name", str(getattr(channel, "id", "?")))
-        error_msg = str(error).lower()
         
         print(
             f"Falha ao conectar ao canal de voz '{channel_name}' (tentativa {attempt}/{max_attempts}): {error}"
@@ -921,52 +920,21 @@ class PlayCommands(commands.Cog):
 
         await self._cleanup_failed_voice_connection(guild)
 
-        # Se for timeout, reconecta apenas o node que foi usado na tentativa
-        if "timeout" in error_msg and ("5" in error_msg or "5.0" in error_msg or "15" in error_msg or "15.0" in error_msg or "30" in error_msg or "30.0" in error_msg):
-            if attempted_node_id:
-                print(f"⚠️ Timeout detectado - reconectando node usado: {attempted_node_id}")
-                
-                # Verifica se há outros nodes disponíveis ANTES de reconectar
-                other_nodes_available = any(
-                    node.status == wavelink.NodeStatus.CONNECTED
-                    for node in wavelink.Pool.nodes.values()
-                    if getattr(node, "identifier", None) != attempted_node_id
-                )
-                
-                if other_nodes_available:
-                    print(f"ℹ️ Outros nodes estão disponíveis. Próxima tentativa usará node alternativo.")
-                    # Apenas marca o node como falho, sem tentar reconectar agora
-                    try:
-                        await self.bot.mark_node_as_failed(attempted_node_id)
-                    except Exception as mark_exc:
-                        print(f"⚠️ Erro ao marcar node como falho: {mark_exc}")
-                else:
-                    print(f"⚠️ Nenhum outro node disponível. Tentando reconectar {attempted_node_id}...")
-                    # Só tenta reconectar se não houver alternativas
-                    try:
-                        reconnected = await self.bot.reconnect_specific_node(attempted_node_id)
-                        if not reconnected:
-                            print(f"❌ Falha ao reconectar node {attempted_node_id}.")
-                    except Exception as reconnect_exc:
-                        print(f"❌ Erro ao reconectar node {attempted_node_id}: {reconnect_exc}")
-            else:
-                print("⚠️ Timeout detectado mas node usado é desconhecido - validando todos...")
-                try:
-                    await self.bot.ensure_lavalink_connected()
-                except Exception as ensure_exc:
-                    pass
-            
-            # Aguarda menos tempo se houver outros nodes disponíveis
-            if other_nodes_available if attempted_node_id else False:
-                await asyncio.sleep(0.5)
-            else:
-                await asyncio.sleep(2)
+        # Verifica se há outros nodes disponíveis
+        other_nodes_available = False
+        if attempted_node_id:
+            other_nodes_available = any(
+                node.status == wavelink.NodeStatus.CONNECTED
+                for node in wavelink.Pool.nodes.values()
+                if getattr(node, "identifier", None) != attempted_node_id
+            )
+        
+        if other_nodes_available:
+            await asyncio.sleep(0.3)
         else:
-            # Apenas valida conexão normalmente para outros erros
-            try:
-                await self.bot.ensure_lavalink_connected()
-            except Exception as ensure_exc:
-                print(f"Erro ao validar Lavalink após falha de voz: {ensure_exc}")
+            print(f"⚠️ Nenhum outro node disponível - aguardando antes de tentar novamente")
+            # Aguarda um pouco mais quando não há alternativas
+            await asyncio.sleep(1.5)
             
             await asyncio.sleep(1)
 
@@ -1001,6 +969,7 @@ class PlayCommands(commands.Cog):
             attempted_node_id = None
             
             try:
+                # Seleciona node para esta tentativa
                 preferred_node_id = None
                 # Só usa afinidade na primeira tentativa; em retry, permite qualquer node disponível
                 if attempt == 1:
@@ -1010,39 +979,44 @@ class PlayCommands(commands.Cog):
                     except Exception:
                         preferred_node_id = None
 
-                preferred_node = None
+                # Filtra nodes disponíveis (exclui nodes que falharam)
+                usable_nodes = [
+                    n for n in wavelink.Pool.nodes.values()
+                    if n.status == wavelink.NodeStatus.CONNECTED and n.identifier not in excluded_nodes
+                ]
+                
+                if not usable_nodes:
+                    print(f"⚠️ Nenhum node disponível para tentativa {attempt}/{attempts} (todos excluídos ou offline)")
+                    raise RuntimeError("Nenhum node Lavalink disponível após exclusões")
+
+                # Escolhe qual node usar
+                selected_node = None
+                
+                # Se há afinidade válida e o node está disponível, usa ele
                 if preferred_node_id and preferred_node_id not in excluded_nodes:
                     try:
                         preferred_node = wavelink.Pool.get_node(preferred_node_id)
-                        if preferred_node.status != wavelink.NodeStatus.CONNECTED:
-                            preferred_node = None
+                        if preferred_node.status == wavelink.NodeStatus.CONNECTED:
+                            selected_node = preferred_node
+                            print(f"🎯 Usando node com afinidade: {preferred_node_id}")
                     except Exception:
-                        preferred_node = None
+                        pass
+                
+                # Se não tem afinidade ou node preferido não está disponível, escolhe o com menos players
+                if selected_node is None:
+                    # Ordena por quantidade de players (menos players = menos carga)
+                    usable_nodes.sort(key=lambda n: len(getattr(n, 'players', {})))
+                    selected_node = usable_nodes[0]
+                    player_count = len(getattr(selected_node, 'players', {}))
+                    print(f"🔍 Selecionado node com menos carga: {selected_node.identifier} ({player_count} player(s) ativos)")
 
                 connect_timeout = 6.0
+                
+                # Cria player com o node selecionado explicitamente
+                def _player_factory(client: discord.Client, ch: discord.abc.Connectable):
+                    return wavelink.Player(client, ch, nodes=[selected_node])
 
-                if preferred_node is not None:
-                    def _player_factory(client: discord.Client, ch: discord.abc.Connectable):
-                        return wavelink.Player(client, ch, nodes=[preferred_node])
-
-                    player = await channel.connect(cls=_player_factory, self_deaf=True, reconnect=True, timeout=connect_timeout)
-                else:
-                    # Em retries, filtra nodes que falharam
-                    if excluded_nodes and attempt > 1:
-                        remaining_nodes = [
-                            n for n in wavelink.Pool.nodes.values()
-                            if n.status == wavelink.NodeStatus.CONNECTED and n.identifier not in excluded_nodes
-                        ]
-                        if remaining_nodes:
-                            def _player_factory_retry(client: discord.Client, ch: discord.abc.Connectable):
-                                return wavelink.Player(client, ch, nodes=remaining_nodes)
-                            print(f"🔄 Retry {attempt}/{attempts}: usando {len(remaining_nodes)} node(s) alternativos (excluindo: {', '.join(excluded_nodes)})")
-                            player = await channel.connect(cls=_player_factory_retry, self_deaf=True, reconnect=True, timeout=connect_timeout)
-                        else:
-                            print(f"⚠️ Nenhum node alternativo disponível para retry {attempt}/{attempts}")
-                            player = await channel.connect(cls=wavelink.Player, self_deaf=True, reconnect=True, timeout=connect_timeout)
-                    else:
-                        player = await channel.connect(cls=wavelink.Player, self_deaf=True, reconnect=True, timeout=connect_timeout)
+                player = await channel.connect(cls=_player_factory, self_deaf=True, reconnect=True, timeout=connect_timeout)
                 
                 # Após conexão bem-sucedida, identifica qual node foi usado
                 try:
@@ -1073,15 +1047,14 @@ class PlayCommands(commands.Cog):
                 except Exception:
                     pass
                 
-                # Se não conseguiu identificar, assume o primeiro node como padrão
-                if not attempted_node_id and self.bot._lavalink_cfgs:
-                    attempted_node_id = self.bot._lavalink_cfgs[0]["id"]
-                    print(f"⚠️ Node usado não identificado, assumindo padrão: {attempted_node_id}")
+                # Se não conseguiu identificar pelo voice_client, usa o node que foi explicitamente selecionado
+                if not attempted_node_id and selected_node:
+                    attempted_node_id = selected_node.identifier
+                    print(f"🎯 Timeout no node selecionado: {attempted_node_id}")
                 
                 # Adiciona o node à lista de exclusão para evitar nas próximas tentativas
                 if attempted_node_id:
                     excluded_nodes.add(attempted_node_id)
-                    print(f"⚠️ Node '{attempted_node_id}' adicionado à lista de exclusão (falha detectada)")
                 
                 # Limpa afinidade do node problemático para tentar outro na próxima vez
                 if attempted_node_id and interaction.guild:
@@ -1093,16 +1066,14 @@ class PlayCommands(commands.Cog):
                     except Exception:
                         pass
                 
-                # Marca o node como falho e aguarda remoção do pool
+                # Marca o node como falho
                 if attempted_node_id:
                     try:
                         await self.bot.mark_node_as_failed(attempted_node_id)
-                        # Aguarda um momento para o node ser realmente removido do pool
-                        await asyncio.sleep(0.5)
                     except Exception as mark_exc:
                         print(f"⚠️ Erro ao marcar node como falho: {mark_exc}")
                 
-                # Tenta reconectar o node problemático
+                # Limpa conexões e aguarda antes da próxima tentativa
                 await self._handle_voice_connect_issue(interaction, channel, exc, attempt, attempts, attempted_node_id)
                 
                 # Se ainda houver tentativas, verifica se há outros nodes disponíveis
@@ -1435,31 +1406,19 @@ class PlayCommands(commands.Cog):
             
             return await interaction.followup.send(embed=embed)
 
-        # Conecta na call e busca a música em paralelo para reduzir latência total.
+        # IMPORTANTE: Conecta na call PRIMEIRO e só depois busca a música.
+        # Isso garante que se houver failover de node durante a conexão, 
+        # a busca será feita com o node correto e os resultados serão consistentes.
         guild = interaction.guild
         had_voice_client = bool(guild and isinstance(getattr(guild, "voice_client", None), wavelink.Player))
 
         is_url = self.is_url(query)
         provider = service.value if service else None
 
-        player_task = asyncio.create_task(self._ensure_active_player(interaction))
-        search_task = asyncio.create_task(
-            self._search_with_fallback(
-                interaction,
-                query,
-                is_url=is_url,
-                provider=provider,
-            )
-        )
-
+        # Primeiro: garantir player conectado
         try:
-            player = await player_task
+            player = await self._ensure_active_player(interaction)
         except Exception as e:
-            try:
-                if not search_task.done():
-                    search_task.cancel()
-            except Exception:
-                pass
             embed = self._error_embed(
                 interaction,
                 "commands.common.embeds.error_title",
@@ -1468,8 +1427,14 @@ class PlayCommands(commands.Cog):
             )
             return await interaction.followup.send(embed=embed)
 
+        # Segundo: buscar música (agora que sabemos qual node está sendo usado)
         try:
-            tracks = await search_task
+            tracks = await self._search_with_fallback(
+                interaction,
+                query,
+                is_url=is_url,
+                provider=provider,
+            )
         except Exception as e:
             # Se este comando acabou de conectar o bot (não havia voice_client),
             # não deixa ele preso na call quando a busca falha.
