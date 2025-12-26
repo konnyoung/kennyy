@@ -63,10 +63,17 @@
       }
     },
     "lonely": {
-      "pause": "Je me retrouve seul dans {call}. Je mets la file en pause pendant 2 minutes en attendant que quelqu'un revienne. Sinon, je me déconnecterai !",
-      "resume": "Quelqu'un a rejoint {call} ! Reprise de la lecture.",
+      "pause_title": "Oh là là ! Ils m'ont laissé seul :(",
+      "pause": "Je vais mettre en pause la file d'attente pendant 2 minutes jusqu'à ce que quelqu'un revienne. Sinon, je me déconnecterai !",
+      "resume_title": "Yay ! Je ne suis plus seul :D",
+      "resume": "Quelqu'un a rejoint {call} ! Reprise de la file d'attente.",
+      "disconnect_title": "Bon, je m'en vais, personne n'est revenu...",
       "disconnect": "Personne n'est revenu dans {call}. Je me déconnecte maintenant."
-    }
+    },
+    "node_down": {
+      "title": "Connexion perdue",
+      "description": "Le serveur qui diffusait votre musique s'est déconnecté. Pour réduire les coûts et maintenir le bot actif, nous utilisons des serveurs tiers qui peuvent avoir des instabilités momentanées (et nous n'avons pas de contrôle sur eux, malheureusement).\n\nMais comme je suis un bon bot, j'ai sauvegardé votre file :3",
+      "recover_button": "Récupérer la File"    }
   },
   "commands": {
     "common": {
@@ -443,8 +450,18 @@
         "now_playing_value": "**{title}**\nPar : {author}",
         "footer": "Utilisez /play pour ajouter de nouvelles pistes à la file"
       }
-    },
-    "filter": {
+    },    "resumequeue": {
+      "description": "Reprendre la dernière file sauvegardée après une déconnexion",
+      "no_cache_title": "Aucune file sauvegardée",
+      "no_cache_description": "Il n'y a pas de file sauvegardée à reprendre.\n\nLe cache de la file expire après 1 heure ou lorsque la file se termine naturellement.",
+      "failed_title": "Échec de la reprise",
+      "failed_description": "Je n'ai pas pu charger de pistes depuis la file sauvegardée.",
+      "success_title": "File restaurée !",
+      "success_description": "**{count}** piste(s) ont été ajoutées à la file.",
+      "first_track": "Première piste",
+      "queue_size": "Taille de la file",
+      "loading": "Restauration de la file..."
+    },    "filter": {
       "buttons": {
         "bass_boost": {
           "label": "Bass Boost",

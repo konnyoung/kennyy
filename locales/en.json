@@ -63,9 +63,17 @@
       }
     },
     "lonely": {
-      "pause": "I was left alone in {call}. Pausing the queue for 2 minutes until someone returns. Otherwise I'll disconnect!",
-      "resume": "Someone joined {call}! Resuming playback.",
-      "disconnect": "No one returned to {call}. Disconnecting now."
+      "pause_title": "Oops! They left me alone :(",
+      "pause": "I'll pause the queue for 2 minutes until someone returns. Otherwise, I'll disconnect!",
+      "resume_title": "Yay! I'm not alone anymore :D",
+      "resume": "Someone joined {call}! Resuming the queue.",
+      "disconnect_title": "Well, I'm leaving, nobody came back...",
+      "disconnect": "Nobody came back to {call}. I'm disconnecting now."
+    },
+    "node_down": {
+      "title": "Connection Lost",
+      "description": "The server that was playing your music went offline. To reduce costs and keep the bot alive, we use third-party servers that may have brief instability (and we don't control them, unfortunately).\n\nBut since I'm a nice bot, I saved your queue :3",
+      "recover_button": "Recover Queue"
     }
   },
   "commands": {
@@ -443,6 +451,18 @@
         "now_playing_value": "**{title}**\nBy: {author}",
         "footer": "Use /play to add new tracks to the queue"
       }
+    },
+    "resumequeue": {
+      "description": "Resume the last saved queue after a disconnection",
+      "no_cache_title": "No saved queue",
+      "no_cache_description": "There's no saved queue to resume.\n\nThe queue cache expires after 1 hour or when the queue finishes naturally.",
+      "failed_title": "Failed to resume",
+      "failed_description": "I couldn't load any tracks from the saved queue.",
+      "success_title": "Queue restored!",
+      "success_description": "**{count}** track(s) have been added to the queue.",
+      "first_track": "First track",
+      "queue_size": "Queue size",
+      "loading": "Restoring queue..."
     },
     "filter": {
       "buttons": {

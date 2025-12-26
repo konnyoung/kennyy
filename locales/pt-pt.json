@@ -63,10 +63,17 @@
       }
     },
     "lonely": {
-      "pause": "Fiquei sozinho em {call}. Vou pausar a fila por 2 minutos até alguém voltar. Caso contrário, vou desconectar-me!",
+      "pause_title": "Eita! Deixaram-me sozinho :(",
+      "pause": "Irei pausar a fila por 2 minutos até alguém regressar. Caso contrário, irei desconectar-me!",
+      "resume_title": "Yay! Já não estou sozinho :D",
       "resume": "Alguém entrou em {call}! A retomar a fila.",
-      "disconnect": "Ninguém voltou para {call}. Vou desconectar-me agora."
-    }
+      "disconnect_title": "Bem, vou-me embora, ninguém voltou mesmo...",
+      "disconnect": "Ninguém voltou para {call}. Irei desconectar-me agora."
+    },
+    "node_down": {
+      "title": "Conexão perdida",
+      "description": "O servidor que estava a reproduzir ficou offline. Para reduzir custos e manter o bot ativo, utilizamos servidores de terceiros que podem sofrer instabilidades momentâneas (e não temos controlo sobre isso, infelizmente).\n\nMas como sou um bot simpático, guardei a tua fila :3",
+      "recover_button": "Recuperar Fila"    }
   },
   "commands": {
     "common": {
@@ -443,6 +450,18 @@
         "now_playing_value": "**{title}**\nPor: {author}",
         "footer": "Utilize /play para adicionar novas músicas à fila"
       }
+    },
+    "resumequeue": {
+      "description": "Retomar a última fila guardada após uma desconexão",
+      "no_cache_title": "Nenhuma fila guardada",
+      "no_cache_description": "Não há nenhuma fila guardada para retomar.\n\nA cache da fila expira após 1 hora ou quando a fila termina naturalmente.",
+      "failed_title": "Falha ao retomar",
+      "failed_description": "Não consegui carregar nenhuma música da fila guardada.",
+      "success_title": "Fila restaurada!",
+      "success_description": "**{count}** música(s) foram adicionadas à fila.",
+      "first_track": "Primeira música",
+      "queue_size": "Tamanho da fila",
+      "loading": "A restaurar fila..."
     },
     "filter": {
       "buttons": {

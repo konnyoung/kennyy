@@ -63,9 +63,17 @@
       }
     },
     "lonely": {
-      "pause": "Me dejaron solo en {call}. Pausaré la cola durante 2 minutos hasta que alguien regrese. ¡De lo contrario me desconectaré!",
-      "resume": "¡Alguien se unió a {call}! Reanudando la reproducción.",
-      "disconnect": "Nadie regresó a {call}. Desconectándome ahora."
+      "pause_title": "¡Vaya! Me dejaron solo :(",
+      "pause": "Pausaré la cola durante 2 minutos hasta que alguien regrese. De lo contrario, me desconectaré!",
+      "resume_title": "¡Yay! Ya no estoy solo :D",
+      "resume": "¡Alguien se unió a {call}! Reanudando la cola.",
+      "disconnect_title": "Bueno, me voy, nadie volvió en realidad...",
+      "disconnect": "Nadie volvió a {call}. Me desconectaré ahora."
+    },
+    "node_down": {
+      "title": "Conexión perdida",
+      "description": "El servidor que reproducía tu música se desconectó. Para reducir costos y mantener el bot activo, usamos servidores de terceros que pueden tener inestabilidades momentáneas (y no tenemos control sobre ellos, desafortunadamente).\n\nPero como soy un bot bueno, guardé tu cola :3",
+      "recover_button": "Recuperar Cola"
     }
   },
   "commands": {
@@ -443,6 +451,18 @@
         "now_playing_value": "**{title}**\nDe: {author}",
         "footer": "Usa /play para agregar nuevas pistas a la cola"
       }
+    },
+    "resumequeue": {
+      "description": "Reanudar la última cola guardada después de una desconexión",
+      "no_cache_title": "Sin cola guardada",
+      "no_cache_description": "No hay ninguna cola guardada para reanudar.\n\nEl caché de la cola expira después de 1 hora o cuando la cola termina naturalmente.",
+      "failed_title": "Fallo al reanudar",
+      "failed_description": "No pude cargar ninguna pista de la cola guardada.",
+      "success_title": "¡Cola restaurada!",
+      "success_description": "**{count}** pista(s) han sido agregadas a la cola.",
+      "first_track": "Primera pista",
+      "queue_size": "Tamaño de cola",
+      "loading": "Restaurando cola..."
     },
     "filter": {
       "buttons": {

@@ -63,10 +63,17 @@
       }
     },
     "lonely": {
-      "pause": "{call} içinde yalnız kaldım. Birisi dönene kadar 2 dakika boyunca kuyruğu duraklatıyorum. Aksi takdirde bağlantıyı keseceğim!",
-      "resume": "Birisi {call} kanalına katıldı! Oynatmaya devam ediyorum.",
-      "disconnect": "Kimse {call} kanalına geri dönmedi. Şimdi bağlantıyı kesiyorum."
-    }
+      "pause_title": "Eyvah! Beni yalnız bıraktılar :(",
+      "pause": "Birisi geri dönene kadar 2 dakika boyunca kuyruğu duraklatacağım. Aksi takdirde bağlantıyı keseceğim!",
+      "resume_title": "Yaşasın! Artık yalnız değilim :D",
+      "resume": "Birisi {call} kanalına katıldı! Kuyruk devam ediyor.",
+      "disconnect_title": "Peki, gidiyorum, kimse dönmedi zaten...",
+      "disconnect": "{call} kanalına kimse geri dönmedi. Şimdi bağlantıyı kesiyorum."
+    },
+    "node_down": {
+      "title": "Bağlantı Kesildi",
+      "description": "Müziğinizi çalan sunucu çevrimdışı oldu. Maliyetleri azaltmak ve botu çalışır durumda tutmak için anlık kesintiler yaşayabilen üçüncü taraf sunucuları kullanıyoruz (ne yazık ki bunları kontrol edemiyoruz).\n\nAma iyi bir bot olduğum için sıranızı kaydettim :3",
+      "recover_button": "Sırayı Kurtar"    }
   },
   "commands": {
     "common": {
@@ -431,6 +438,18 @@
         "now_playing_value": "**{title}**\nTarafından: {author}",
         "footer": "Sıraya yeni parçalar eklemek için /play komudunu kullanın."
       }
+    },
+    "resumequeue": {
+      "description": "Bağlantı kesildikten sonra kaydedilen son sırayı devam ettir",
+      "no_cache_title": "Kaydedilmiş sıra yok",
+      "no_cache_description": "Devam ettirilecek kaydedilmiş bir sıra yok.\n\nSıra önbelleği 1 saat sonra veya sıra doğal olarak bittiğinde sona erer.",
+      "failed_title": "Devam ettirilemedi",
+      "failed_description": "Kaydedilen sıradan hiçbir parça yükleyemedim.",
+      "success_title": "Sıra geri yüklendi!",
+      "success_description": "**{count}** parça sıraya eklendi.",
+      "first_track": "İlk parça",
+      "queue_size": "Sıra boyutu",
+      "loading": "Sıra geri yükleniyor..."
     },
     "filter": {
       "buttons": {

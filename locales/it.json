@@ -63,10 +63,17 @@
       }
     },
     "lonely": {
-      "pause": "Sono rimasto solo in {call}. Metto in pausa la coda per 2 minuti finché qualcuno non ritorna. Altrimenti mi disconnetto!",
-      "resume": "Qualcuno si è unito a {call}! Riprendo la riproduzione.",
+      "pause_title": "Accidenti! Mi hanno lasciato solo :(",
+      "pause": "Metterò in pausa la coda per 2 minuti fino al ritorno di qualcuno. Altrimenti, mi disconnetterò!",
+      "resume_title": "Evviva! Non sono più solo :D",
+      "resume": "Qualcuno è entrato in {call}! Ripresa della coda.",
+      "disconnect_title": "Beh, me ne vado, nessuno è tornato davvero...",
       "disconnect": "Nessuno è tornato in {call}. Mi disconnetto ora."
-    }
+    },
+    "node_down": {
+      "title": "Connessione persa",
+      "description": "Il server che riproduceva la tua musica si è disconnesso. Per ridurre i costi e mantenere il bot attivo, utilizziamo server di terze parti che possono avere instabilità momentanee (e non abbiamo controllo su di essi, purtroppo).\n\nMa siccome sono un bot buono, ho salvato la tua coda :3",
+      "recover_button": "Recupera Coda"    }
   },
   "commands": {
     "common": {
