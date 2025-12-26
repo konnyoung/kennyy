@@ -28,6 +28,119 @@ from commands.logger import BotLogger
 # Carrega variáveis de ambiente
 load_dotenv()
 
+
+# ============================================================================
+# QueueCache - Sistema para salvar filas quando um node cai
+# ============================================================================
+QUEUE_CACHE_TTL_MS = 60 * 60 * 1000  # 1 hora em ms
+
+
+class QueueCache:
+    """Cache de filas para recuperação após queda de node."""
+
+    def __init__(self):
+        self._cache: dict[int, dict] = {}  # guild_id -> {tracks, savedAt, expiresAt}
+
+    def save_queue(
+        self,
+        guild_id: int,
+        current_track: wavelink.Playable | None,
+        queue_tracks: list[wavelink.Playable],
+    ) -> None:
+        """Salva a fila atual de um servidor."""
+        if not guild_id:
+            return
+
+        tracks = []
+
+        # Adiciona track atual primeiro
+        if current_track:
+            tracks.append(self._serialize_track(current_track))
+
+        # Adiciona tracks da fila
+        for track in queue_tracks:
+            tracks.append(self._serialize_track(track))
+
+        if not tracks:
+            return
+
+        import time
+        now = int(time.time() * 1000)
+        self._cache[guild_id] = {
+            "tracks": tracks,
+            "savedAt": now,
+            "expiresAt": now + QUEUE_CACHE_TTL_MS,
+        }
+        print(f"[QueueCache] Salvou {len(tracks)} track(s) para guild {guild_id}")
+
+    def get_queue(self, guild_id: int) -> list[dict] | None:
+        """Obtém a fila salva de um servidor."""
+        if not guild_id:
+            return None
+
+        entry = self._cache.get(guild_id)
+        if not entry:
+            return None
+
+        # Verifica expiração
+        import time
+        now = int(time.time() * 1000)
+        if now > entry["expiresAt"]:
+            del self._cache[guild_id]
+            print(f"[QueueCache] Cache expirado para guild {guild_id}")
+            return None
+
+        return entry["tracks"]
+
+    def clear_queue(self, guild_id: int) -> None:
+        """Limpa o cache de um servidor."""
+        if guild_id in self._cache:
+            del self._cache[guild_id]
+            print(f"[QueueCache] Limpou cache para guild {guild_id}")
+
+    def has_cache(self, guild_id: int) -> bool:
+        """Verifica se existe cache válido para um servidor."""
+        if not guild_id:
+            return False
+
+        entry = self._cache.get(guild_id)
+        if not entry:
+            return False
+
+        import time
+        now = int(time.time() * 1000)
+        if now > entry["expiresAt"]:
+            del self._cache[guild_id]
+            return False
+
+        return True
+
+    def get_cache_age(self, guild_id: int) -> int | None:
+        """Retorna a idade do cache em ms."""
+        entry = self._cache.get(guild_id)
+        if not entry:
+            return None
+        import time
+        return int(time.time() * 1000) - entry["savedAt"]
+
+    def _serialize_track(self, track: wavelink.Playable) -> dict:
+        """Serializa um track para armazenamento."""
+        requester = getattr(track, "requester", None)
+        return {
+            "encoded": getattr(track, "encoded", None),
+            "title": getattr(track, "title", None),
+            "author": getattr(track, "author", None),
+            "uri": getattr(track, "uri", None),
+            "identifier": getattr(track, "identifier", None),
+            "length": getattr(track, "length", None),
+            "artworkUrl": getattr(track, "artwork", None) or getattr(track, "artworkUrl", None),
+            "sourceName": getattr(track, "source", None),
+            "requester": {
+                "id": requester.id,
+                "username": requester.name,
+            } if requester else None,
+        }
+
 # Parse argumentos de linha de comando
 parser = argparse.ArgumentParser(description='Music Bot com suporte a proxy')
 parser.add_argument('--proxy', type=str, help='Proxy SOCKS5/HTTP (ex: socks5://127.0.0.1:40000)', default=None)
@@ -90,6 +203,12 @@ class MusicBot(commands.Bot):
         self._node_connected_at: dict[str, float] = {}  # node_id -> timestamp quando conectou
         # Rastreamento de downtime dos nodes (timestamps de quando desconectaram)
         self._node_disconnected_at: dict[str, float] = {}  # node_id -> timestamp quando desconectou
+        # Cache de filas para recuperação após queda de node
+        self.queue_cache = QueueCache()
+        # Cache de notificações pendentes de node down (para não notificar se reconectar rápido)
+        self._pending_node_notifications: dict[str, asyncio.Task] = {}
+        # TTL para notificações de node down (não notifica a mesma guild duas vezes em 2 min)
+        self._node_notify_cache: dict[str, float] = {}  # "guild_id:node_id" -> timestamp
 
         if not self.owner_ids:
             print("Aviso: BOT_OWNER_IDS não definidos. Comandos de administrador do bot ficarão indisponíveis.")
@@ -358,13 +477,24 @@ class MusicBot(commands.Bot):
         message_channel = self._preferred_text_channel(player, guild)
         if message_channel is not None:
             try:
-                pause_message = self.translate(
+                pause_title = self.translate(
+                    "player.lonely.pause_title",
+                    guild_id=guild.id,
+                    default="Eita! Me deixaram só :(",
+                )
+                pause_description = self.translate(
                     "player.lonely.pause",
                     guild_id=guild.id,
                     call=channel.mention,
-                    default=f"Fiquei sozinho em {channel.mention}. Irei pausar a fila por 2 minutos até alguém retornar. Caso contrário, irei me desconectar!",
+                    default="Irei pausar a fila por 2 minutos até alguém retornar. Caso contrário, irei me desconectar!",
                 )
-                await message_channel.send(pause_message)
+                embed = discord.Embed(
+                    title=f"<:catchill:1451442818408124557> {pause_title}",
+                    description=pause_description,
+                    color=0xffa500,  # Orange
+                )
+                pause_msg = await message_channel.send(embed=embed)
+                player.lonely_pause_message = pause_msg
                 if hasattr(player, "text_channel"):
                     player.text_channel = message_channel
             except Exception as exc:
@@ -396,6 +526,15 @@ class MusicBot(commands.Bot):
 
         player.afk_pause_active = False
 
+        # Delete the pause message if it exists
+        pause_msg = getattr(player, "lonely_pause_message", None)
+        if pause_msg:
+            try:
+                await pause_msg.delete()
+            except Exception:
+                pass
+            player.lonely_pause_message = None
+
         if getattr(player, "paused", False) and getattr(player, "current", None):
             try:
                 await player.pause(False)
@@ -406,17 +545,37 @@ class MusicBot(commands.Bot):
         channel = getattr(player, "channel", None)
         if message_channel is not None and channel is not None:
             try:
-                resume_message = self.translate(
+                resume_title = self.translate(
+                    "player.lonely.resume_title",
+                    guild_id=guild.id,
+                    default="Yay! Não estou mais sozinho :D",
+                )
+                resume_description = self.translate(
                     "player.lonely.resume",
                     guild_id=guild.id,
                     call=channel.mention,
                     default=f"Alguém entrou em {channel.mention}! Retomando a fila.",
                 )
-                await message_channel.send(resume_message)
+                embed = discord.Embed(
+                    title=f"<:7156remwink:1451443034838405330> {resume_title}",
+                    description=resume_description,
+                    color=0x87ceeb,  # Light blue
+                )
+                resume_msg = await message_channel.send(embed=embed)
+                # Auto-delete after 10 seconds
+                asyncio.create_task(self._delete_message_after(resume_msg, 10))
                 if hasattr(player, "text_channel"):
                     player.text_channel = message_channel
             except Exception as exc:
                 print(f"Falha ao enviar aviso de retomada: {exc}")
+
+    async def _delete_message_after(self, message: discord.Message, delay: float) -> None:
+        """Delete a message after a specified delay in seconds."""
+        try:
+            await asyncio.sleep(delay)
+            await message.delete()
+        except Exception:
+            pass
 
     async def _lonely_disconnect_countdown(self, guild_id: int, channel_id: int) -> None:
         player: wavelink.Player | None = None
@@ -445,13 +604,23 @@ class MusicBot(commands.Bot):
             message_channel = self._preferred_text_channel(player, guild)
             if message_channel is not None:
                 try:
-                    disconnect_message = self.translate(
+                    disconnect_title = self.translate(
+                        "player.lonely.disconnect_title",
+                        guild_id=guild_id,
+                        default="Bem, estou indo embora, ninguém voltou mesmo...",
+                    )
+                    disconnect_description = self.translate(
                         "player.lonely.disconnect",
                         guild_id=guild_id,
                         call=channel.mention,
                         default=f"Ninguém voltou para {channel.mention}. Irei me desconectar agora.",
                     )
-                    await message_channel.send(disconnect_message)
+                    embed = discord.Embed(
+                        title=f"👋 {disconnect_title}",
+                        description=disconnect_description,
+                        color=0xff0000,  # Red
+                    )
+                    await message_channel.send(embed=embed)
                     if hasattr(player, "text_channel"):
                         player.text_channel = message_channel
                 except Exception as exc:
@@ -589,7 +758,8 @@ class MusicBot(commands.Bot):
             "commands.admin",
             "commands.ping",
             "commands.language",
-            "commands.lyrics"
+            "commands.lyrics",
+            "commands.resumequeue",
         ]
         
         for ext in extensions:
@@ -853,19 +1023,33 @@ class MusicBot(commands.Bot):
         # Remove timestamp de conexão se existir
         self._node_connected_at.pop(node_identifier, None)
         
-        # Verifica se tem players ativos antes de fechar
+        # Salva filas de players afetados e agenda notificação
+        await self._save_queue_and_notify_node_down(node_identifier)
+        
+        # Destrói todos os players do node imediatamente para evitar ghost state
         try:
             node = wavelink.Pool.get_node(node_identifier)
-            active_players = len(node.players) if hasattr(node, 'players') else 0
-            
-            if active_players > 0:
-                print(f"⚠️ Node {node_identifier} tem {active_players} player(s) ativo(s) - não fechando (apenas na blacklist)")
-                # Deixa tocar até terminar naturalmente, mas não aceita novos players
-                return
-            else:
-                print(f"🔌 Desconectando nó {node_identifier}...")
-                await node.close(eject=True)
-                print(f"✅ Nó {node_identifier} removido do pool.")
+            if hasattr(node, 'players') and node.players:
+                players_to_destroy = list(node.players.values())
+                print(f"💀 Destruindo {len(players_to_destroy)} player(s) do node {node_identifier}...")
+                for player in players_to_destroy:
+                    try:
+                        guild_name = getattr(player.guild, "name", "Unknown") if player.guild else "Unknown"
+                        await player.disconnect()
+                        print(f"   ✓ Player destruído (guild: {guild_name})")
+                    except Exception as e:
+                        print(f"   ⚠️ Erro ao destruir player: {e}")
+        except wavelink.InvalidNodeException:
+            pass  # Node já foi removido
+        except Exception as exc:
+            print(f"⚠️ Erro ao destruir players do nó {node_identifier}: {exc}")
+        
+        # Fecha o node
+        try:
+            node = wavelink.Pool.get_node(node_identifier)
+            print(f"🔌 Desconectando nó {node_identifier}...")
+            await node.close(eject=True)
+            print(f"✅ Nó {node_identifier} removido do pool.")
         except wavelink.InvalidNodeException:
             pass  # Node já foi removido
         except Exception as exc:
@@ -940,6 +1124,215 @@ class MusicBot(commands.Bot):
         
         print(f"⚠️ Nó {node_identifier} não conectou após {max_wait}s.")
         return False
+
+    def is_node_blacklisted(self, node_identifier: str) -> bool:
+        """Verifica se um node está na blacklist."""
+        current_time = asyncio.get_event_loop().time()
+        blacklist_expiry = self._node_blacklist.get(node_identifier, 0)
+        return current_time < blacklist_expiry
+
+    def get_least_used_node(self) -> wavelink.Node | None:
+        """Retorna o node com menos players ativos (e que não está na blacklist)."""
+        candidates: list[tuple[wavelink.Node, int]] = []
+
+        for node in wavelink.Pool.nodes.values():
+            identifier = getattr(node, "identifier", None)
+            if not identifier:
+                continue
+
+            # Ignora nodes na blacklist
+            if self.is_node_blacklisted(identifier):
+                continue
+
+            # Ignora nodes não conectados
+            if node.status != wavelink.NodeStatus.CONNECTED:
+                continue
+
+            player_count = len(node.players) if hasattr(node, "players") else 0
+            candidates.append((node, player_count))
+
+        if not candidates:
+            return None
+
+        # Ordena por número de players (menor primeiro)
+        candidates.sort(key=lambda x: x[1])
+        return candidates[0][0]
+
+    def has_healthy_node(self) -> bool:
+        """Verifica se existe pelo menos um node saudável (conectado e não na blacklist)."""
+        for node in wavelink.Pool.nodes.values():
+            identifier = getattr(node, "identifier", None)
+            if not identifier:
+                continue
+
+            if self.is_node_blacklisted(identifier):
+                continue
+
+            if node.status == wavelink.NodeStatus.CONNECTED:
+                return True
+
+        return False
+
+    async def _save_queue_and_notify_node_down(self, node_identifier: str) -> None:
+        """Salva filas de players afetados e agenda notificação de node down."""
+        import time
+
+        try:
+            node = wavelink.Pool.get_node(node_identifier)
+            players = list(node.players.values()) if hasattr(node, "players") else []
+        except wavelink.InvalidNodeException:
+            players = []
+
+        if not players:
+            # Tenta encontrar players pelo voice_client
+            players = [
+                vc for vc in self.voice_clients
+                if isinstance(vc, wavelink.Player)
+                and getattr(getattr(vc, "node", None), "identifier", None) == node_identifier
+            ]
+
+        if not players:
+            print(f"[NodeDown] Nenhum player afetado pelo node {node_identifier}")
+            return
+
+        affected_guilds: list[tuple[int, discord.TextChannel | None]] = []
+
+        for player in players:
+            guild = getattr(player, "guild", None)
+            if not guild:
+                continue
+
+            guild_id = guild.id
+            current_track = getattr(player, "current", None)
+            queue_tracks = list(player.queue) if hasattr(player, "queue") else []
+
+            # Salva a fila no cache
+            if current_track or queue_tracks:
+                self.queue_cache.save_queue(guild_id, current_track, queue_tracks)
+
+            # Obtém text_channel para notificação
+            text_channel = getattr(player, "text_channel", None)
+            if text_channel is None and current_track:
+                requester = getattr(current_track, "requester", None)
+                if requester and hasattr(requester, "channel"):
+                    text_channel = requester.channel
+
+            affected_guilds.append((guild_id, text_channel))
+
+        # Agenda notificação com delay (15s) - pode ser cancelada se reconectar rápido
+        await self._schedule_node_down_notification(node_identifier, affected_guilds)
+
+    async def _schedule_node_down_notification(
+        self,
+        node_identifier: str,
+        affected_guilds: list[tuple[int, discord.TextChannel | None]],
+    ) -> None:
+        """Agenda notificação de node down após grace period."""
+        QUICK_RECONNECT_GRACE_MS = 15_000  # 15 segundos
+        NODE_NOTIFY_TTL_MS = 120_000  # 2 minutos
+
+        # Cancela notificação anterior se existir
+        pending = self._pending_node_notifications.get(node_identifier)
+        if pending and not pending.done():
+            pending.cancel()
+            print(f"[NodeDown] Cancelou notificação pendente para {node_identifier}")
+
+        async def delayed_notify():
+            await asyncio.sleep(QUICK_RECONNECT_GRACE_MS / 1000)
+
+            # Verifica se o node reconectou
+            try:
+                node = wavelink.Pool.get_node(node_identifier)
+                if node.status == wavelink.NodeStatus.CONNECTED:
+                    print(f"[NodeDown] Node {node_identifier} reconectou - cancelando notificação")
+                    return
+            except wavelink.InvalidNodeException:
+                pass  # Node ainda offline
+
+            # Envia notificações
+            import time
+            now = time.time() * 1000
+
+            for guild_id, text_channel in affected_guilds:
+                if not text_channel:
+                    continue
+
+                # Verifica TTL para não spammar
+                cache_key = f"{guild_id}:{node_identifier}"
+                last_notified = self._node_notify_cache.get(cache_key, 0)
+                if now - last_notified < NODE_NOTIFY_TTL_MS:
+                    continue
+
+                try:
+                    await self._send_node_down_embed(guild_id, text_channel, node_identifier)
+                    self._node_notify_cache[cache_key] = now
+                except Exception as e:
+                    print(f"[NodeDown] Erro ao notificar guild {guild_id}: {e}")
+
+        task = asyncio.create_task(delayed_notify())
+        self._pending_node_notifications[node_identifier] = task
+
+    async def _send_node_down_embed(
+        self,
+        guild_id: int,
+        channel: discord.TextChannel,
+        node_identifier: str,
+    ) -> None:
+        """Envia embed de node down com botão de recuperar fila."""
+        title = self.translate(
+            "player.node_down.title",
+            guild_id=guild_id,
+            default="Connection Lost",
+        )
+        description = self.translate(
+            "player.node_down.description",
+            guild_id=guild_id,
+            default="The server that was playing your music went offline. To reduce costs and keep the bot alive, we use third-party servers that may have brief instability (and we don't control them, unfortunately).\n\nBut since I'm a nice bot, I saved your queue :3",
+        )
+
+        embed = discord.Embed(
+            title=f"<:crymeru:1453534083983474867> {title}",
+            description=description,
+            color=0xFF6B6B,
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_footer(text=f"Node: {node_identifier}")
+
+        # Adiciona botão de recuperar fila se houver cache
+        components = []
+        if self.queue_cache.has_cache(guild_id):
+            button_label = self.translate(
+                "player.node_down.recover_button",
+                guild_id=guild_id,
+                default="Recover Queue",
+            )
+            view = discord.ui.View(timeout=3600)  # 1 hora
+            button = discord.ui.Button(
+                style=discord.ButtonStyle.primary,
+                label=button_label,
+                emoji="🔄",
+                custom_id=f"resumequeue:{guild_id}",
+            )
+
+            async def button_callback(interaction: discord.Interaction):
+                # Redireciona para o comando /resumequeue
+                cog = self.get_cog("ResumeQueueCog")
+                if cog:
+                    # Chama o callback interno do comando (não o objeto Command)
+                    await cog.resumequeue.callback(cog, interaction)
+                else:
+                    await interaction.response.send_message(
+                        "Command not available. Please use `/resumequeue`.",
+                        ephemeral=True,
+                    )
+
+            button.callback = button_callback
+            view.add_item(button)
+            await channel.send(embed=embed, view=view)
+        else:
+            await channel.send(embed=embed)
+
+        print(f"[NodeDown] Notificou guild {guild_id} sobre queda do node {node_identifier}")
 
     async def force_reconnect_lavalink(self) -> bool:
         """Força uma reconexão completa com todos os nós Lavalink, fechando conexões antigas."""
