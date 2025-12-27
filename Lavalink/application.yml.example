@@ -1,125 +1,120 @@
 server:
   port: 2333
   address: 0.0.0.0
-  http2:
-    enabled: false
 
 lavalink:
-  plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.15.0"
-      repository: "https://maven.lavalink.dev/releases"
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.1"
-      repository: "https://maven.lavalink.dev/releases"
-    - dependency: "com.github.topi314.lavalyrics:lavalyrics-plugin:1.1.0"
-      repository: "https://maven.lavalink.dev/releases"
   server:
-    password: "youshallnotpass"
-    sources:
-      youtube: false
-      bandcamp: true
-      soundcloud: true
-      twitch: true
-      vimeo: true
-      nico: true
-      http: true
-      local: false
-    filters:
-      volume: true
-      equalizer: true
-      karaoke: true
-      timescale: true
-      tremolo: true
-      vibrato: true
-      distortion: true
-      rotation: true
-      channelMix: true
-      lowPass: true
-    nonAllocatingFrameBuffer: false
+    password: "YOUR_LAVALINK_PASSWORD"
+    
+    # Audio quality settings
     bufferDurationMs: 400
     frameBufferDurationMs: 5000
     opusEncodingQuality: 10
-    resamplingQuality: LOW
+    resamplingQuality: HIGH
     trackStuckThresholdMs: 10000
     useSeekGhosting: true
-    youtubePlaylistLoadLimit: 6
-    playerUpdateInterval: 5
+    youtubePlaylistLoadLimit: 100
+    playerUpdateInterval: 1
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
 
+    # ==========================================
+    # Audio Sources
+    # ==========================================
+    sources:
+      youtube: false      # IMPORTANT: Disable native YouTube (use plugin instead)
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: true
+      local: false
+
+    # ==========================================
+    # IPv6 Rotation Configuration (Optional)
+    # ==========================================
+    # Uncomment and configure if you have an IPv6 /64 block
+    # See IPV6_ROTATION_SETUP.md for full setup guide
+    #
+    # ratelimit:
+    #   ipBlocks:
+    #     - "YOUR_IPV6_BLOCK::/64"    # Example: "2001:db8:1234:5678::/64"
+    #   strategy: "RotatingNanoSwitch"
+    #   searchTriggersFail: true
+    #   retryLimit: -1
+    #   # excludedIps: []  # Individual IPs only, no CIDR
+
+# ==========================================
+# Plugins Configuration
+# ==========================================
 plugins:
+  # YouTube Plugin (recommended over native source)
+  # https://github.com/lavalink-devs/youtube-source
   youtube:
     enabled: true
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
-    cookieFile: "./cookies/youtube.txt"  # Example generic path
+    
+    # Client priority order (ANDROID_VR works best for most cases)
     clients:
-      - MUSIC
-      - WEB
-      - WEBEMBEDDED
       - ANDROID_VR
-      - TV
+      - MUSIC
       - TVHTML5EMBEDDED
+      - TV
+    
+    # OAuth Configuration (recommended to avoid rate limits)
+    # Get refresh token: https://github.com/lavalink-devs/youtube-source#oauth
     oauth:
-      enabled: true
-      # refreshToken: "your-refresh-token-here"
-      # skipInitialization: true
+      enabled: false                    # Set to true after getting refresh token
+      refreshToken: "YOUR_REFRESH_TOKEN"
 
+  # LavaSrc Plugin (Spotify, Deezer, Apple Music, etc.)
+  # https://github.com/topi314/LavaSrc
   lavasrc:
     providers:
       - "ytsearch:\"%ISRC%\""
       - "ytsearch:%QUERY%"
+    
     sources:
       spotify: true
       applemusic: false
       deezer: false
       yandexmusic: false
       flowerytts: false
-      youtube: true
-      vkmusic: false
-      tidal: false
-      qobuz: false
-      ytdlp: false
-      jiosaavn: false
-    lyrics-sources:
-      spotify: false
-      deezer: false
-      youtube: false
-      yandexmusic: false
-      vkmusic: false
-      lrcLib: true
+      youtube: false    # Use youtube-source plugin instead
+    
+    # Spotify Configuration
     spotify:
-      clientId: "your-spotify-client-id"
-      clientSecret: "your-spotify-client-secret"
-      spDc: "your-spotify-spdc-cookie"
+      clientId: "YOUR_SPOTIFY_CLIENT_ID"
+      clientSecret: "YOUR_SPOTIFY_CLIENT_SECRET"
       countryCode: "US"
-      playlistLoadLimit: 6
-      albumLoadLimit: 6
+      playlistLoadLimit: 100
+      albumLoadLimit: 50
       resolveArtistsInSearch: true
       localFiles: false
-      preferAnonymousToken: false
 
-  lavalyrics:
+  # Lyrics Plugin (optional)
+  # https://github.com/topi314/LavaLyrics
+  lyrics:
     sources:
+      - spotify
       - youtube
       - deezer
-      - yandexMusic
 
-metrics:
-  prometheus:
-    enabled: false
-    endpoint: /metrics
-  sentry:
-    dsn: ""
-    environment: ""
-
+# ==========================================
+# Logging Configuration
+# ==========================================
 logging:
   file:
     path: ./logs/
+  
   level:
     root: INFO
     lavalink: INFO
+    dev.lavalink.youtube: DEBUG    # Useful for debugging YouTube issues
+  
   request:
     enabled: true
     includeClientInfo: true
@@ -127,7 +122,25 @@ logging:
     includeQueryString: true
     includePayload: true
     maxPayloadLength: 10000
+
   logback:
     rollingpolicy:
-      max-file-size: 1GB
+      max-file-size: 50MB
       max-history: 30
+
+# ==========================================
+# Sentry Error Tracking (Optional)
+# ==========================================
+# sentry:
+#   dsn: "YOUR_SENTRY_DSN"
+#   environment: "production"
+#   tags:
+#     service: lavalink
+
+# ==========================================
+# Metrics (Optional)
+# ==========================================
+metrics:
+  prometheus:
+    enabled: false
+    endpoint: /metrics
