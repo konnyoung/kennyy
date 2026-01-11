@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> Por favorzinho, vote em mim no Top.gg!",
-      "description": "Está gostando? Dê um voto a cada 12 horas e ajude o bot a continuar ativo [clicando aqui](https://top.gg/bot/920133124095098881)",
-      "footer": "Use /play novamente quando quiser"
+      "title": "✅ Fim da fila de reprodução",
+      "website_button": "Website",
+      "support_button": "Servidor de Suporte",
+      "vote_button": "Vote no top.gg"
     },
     "track_failed": {
       "title": "❌ Não consegui reproduzir",
@@ -40,13 +41,19 @@
       "fallback_reason": "Motivo desconhecido (pode ser restrição regional ou indisponibilidade temporária).",
       "footer": "Vou saltar esta faixa e continuar.",
       "unknown_track": "Faixa desconhecida",
-      "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). A tocar uma alternativa: **{fallback}**"
+      "fallback_playing": "⚠️ Não consegui reproduzir **{original}** (login obrigatório). A tocar uma alternativa: **{fallback}**",
+      "no_mirror_title": "🎵 Não consigo tocar esta música",
+      "no_mirror_description": "Não encontrei **{track}** no YouTube Music (onde procuro as músicas). Provavelmente o artista não fez upload lá.\n\nTenta enviar um link direto do YouTube, facilita-me a vida! :3",
+      "no_mirror_footer": "Descansa, a culpa não é tua!"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> A baixar informações da faixa",
       "pending": "Relaxa! Só preciso de mais algumas informações do servidor para continuar a tocar. Isto vai demorar uns 5 segundos!"
     },
     "warp": {
+      "switching_ip": "A trocar de IP...",
+      "switching_ip_description": "O YouTube acaba por bloquear o meu acesso para tocar as músicas, então vou tentar tocar a tua música até conseguir!",
+      "switching_ip_footer": "Isto pode demorar alguns segundos, não te assustes!",
       "enable": {
         "title": "✅ Reconexão WARP ativada",
         "description": "O bot vai executar o warp-cli nesse erro específico e tentar novamente após 5s."

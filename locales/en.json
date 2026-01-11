@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> Please vote for me on Top.gg!",
-      "description": "Enjoying it? Give a vote every 12 hours and help keep the bot alive by [clicking here](https://top.gg/bot/920133124095098881)",
-      "footer": "Use /play again whenever you want"
+      "title": "✅ Playback queue finished",
+      "website_button": "Website",
+      "support_button": "Support Server",
+      "vote_button": "Vote on top.gg"
     },
     "track_failed": {
       "title": "❌ Couldn't play",
@@ -40,13 +41,19 @@
       "fallback_reason": "Unknown reason (it might be region-locked or temporarily unavailable).",
       "footer": "I'll skip this track and keep going.",
       "unknown_track": "Unknown track",
-      "fallback_playing": "⚠️ I couldn't play **{original}** (login required). Playing an alternative: **{fallback}**"
+      "fallback_playing": "⚠️ I couldn't play **{original}** (login required). Playing an alternative: **{fallback}**",
+      "no_mirror_title": "🎵 Can't play this track",
+      "no_mirror_description": "I couldn't find **{track}** on YouTube Music (where I search for songs). The artist probably didn't upload it there.\n\nTry sending a direct YouTube link, that makes my job easier! :3",
+      "no_mirror_footer": "Don't worry, this isn't your fault!"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> Downloading track info",
       "pending": "Sit tight! I just need a bit more info from the server to keep playing. This will take about 5 seconds!"
     },
     "warp": {
+      "switching_ip": "Switching IP...",
+      "switching_ip_description": "YouTube sometimes blocks my access to play music, so I'll keep trying to play your song until it works!",
+      "switching_ip_footer": "This may take a few seconds, don't worry!",
       "enable": {
         "title": "✅ WARP auto-reconnect enabled",
         "description": "The bot will run warp-cli on the specific fault and retry after 5s."

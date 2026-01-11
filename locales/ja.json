@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> Top.gg で応援お願いします！",
-      "description": "気に入ってくれた？ 12時間ごとに投票して、このボットが動き続けるように[こちらをクリック](https://top.gg/bot/920133124095098881)で応援してね",
-      "footer": "使いたいときは /play をどうぞ"
+      "title": "✅ 再生キューが終了しました",
+      "website_button": "ウェブサイト",
+      "support_button": "サポートサーバー",
+      "vote_button": "top.ggで投票"
     },
     "track_failed": {
       "title": "❌ 再生できませんでした",
@@ -40,13 +41,19 @@
       "fallback_reason": "原因不明です（地域制限または一時的な問題かもしれません）。",
       "footer": "このトラックをスキップして続行します。",
       "unknown_track": "不明なトラック",
-      "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します"
+      "fallback_playing": "⚠️ **{original}** を再生できませんでした（ログインが必要です）。代わりに **{fallback}** を再生します",
+      "no_mirror_title": "🎵 この曲は再生できません",
+      "no_mirror_description": "**{track}** はYouTube Music（曲を検索する場所）で見つかりませんでした。おそらくアーティストがそこにアップロードしていないのでしょう。\n\nYouTubeの直接リンクを送ってみてください、そうすれば私の仕事が楽になります！:3",
+      "no_mirror_footer": "大丈夫、あなたのせいじゃないよ！"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> トラック情報を取得中",
       "pending": "ちょっと待ってね！再生を続けるためにサーバーからもう少し情報を取得します。5秒ほどかかります！"
     },
     "warp": {
+      "switching_ip": "IPを切り替え中...",
+      "switching_ip_description": "YouTubeが音楽再生のアクセスをブロックすることがあるので、曲が再生できるまで試し続けます！",
+      "switching_ip_footer": "数秒かかる場合がありますが、心配しないでください！",
       "enable": {
         "title": "✅ WARP 自動再接続を有効化",
         "description": "特定の障害で warp-cli を実行し、5秒後に再試行します。"

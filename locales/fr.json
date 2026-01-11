@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> S'il te plaît, vote pour moi sur Top.gg !",
-      "description": "Tu apprécies ? Donne un vote toutes les 12h et aide le bot à rester en ligne en [cliquant ici](https://top.gg/bot/920133124095098881)",
-      "footer": "Utilise /play à nouveau quand tu veux"
+      "title": "✅ File de lecture terminée",
+      "website_button": "Site web",
+      "support_button": "Serveur d'assistance",
+      "vote_button": "Voter sur top.gg"
     },
     "track_failed": {
       "title": "❌ Impossible de lire",
@@ -40,13 +41,19 @@
       "fallback_reason": "Raison inconnue (peut-être une restriction régionale ou une indisponibilité temporaire).",
       "footer": "Je vais ignorer cette piste et continuer.",
       "unknown_track": "Piste inconnue",
-      "fallback_playing": "⚠️ Je n'ai pas pu lire **{original}** (connexion requise). Lecture d'une alternative : **{fallback}**"
+      "fallback_playing": "⚠️ Je n'ai pas pu lire **{original}** (connexion requise). Lecture d'une alternative : **{fallback}**",
+      "no_mirror_title": "🎵 Je ne peux pas lire cette chanson",
+      "no_mirror_description": "Je n'ai pas trouvé **{track}** sur YouTube Music (où je cherche les chansons). L'artiste ne l'a probablement pas uploadé là-bas.\n\nEssaie d'envoyer un lien direct YouTube, ça me facilite la tâche ! :3",
+      "no_mirror_footer": "T'inquiète, ce n'est pas ta faute !"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> Récupération des infos de la piste",
       "pending": "Pas de panique ! J'ai juste besoin de quelques infos supplémentaires du serveur pour continuer la lecture. Ça prend environ 5 secondes !"
     },
     "warp": {
+      "switching_ip": "Changement d'IP...",
+      "switching_ip_description": "YouTube bloque parfois mon accès pour lire la musique, alors je vais continuer à essayer de jouer ta chanson jusqu'à ce que ça marche !",
+      "switching_ip_footer": "Cela peut prendre quelques secondes, ne t'inquiète pas !",
       "enable": {
         "title": "✅ Reconnexion WARP activée",
         "description": "Le bot exécutera warp-cli sur cette faute spécifique et réessaiera après 5s."

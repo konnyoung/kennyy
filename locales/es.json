@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> ¡Por favor, vota por mí en Top.gg!",
-      "description": "¿Te está gustando? Da un voto cada 12 horas y ayuda a mantener el bot activo [haciendo clic aquí](https://top.gg/bot/920133124095098881)",
-      "footer": "Usa /play de nuevo cuando quieras"
+      "title": "✅ Cola de reproducción terminada",
+      "website_button": "Sitio web",
+      "support_button": "Servidor de Soporte",
+      "vote_button": "Votar en top.gg"
     },
     "track_failed": {
       "title": "❌ No se pudo reproducir",
@@ -40,13 +41,19 @@
       "fallback_reason": "Motivo desconocido (puede estar bloqueado por región o temporalmente no disponible).",
       "footer": "Saltaré esta pista y continuaré.",
       "unknown_track": "Pista desconocida",
-      "fallback_playing": "⚠️ No pude reproducir **{original}** (inicio de sesión requerido). Reproduciendo una alternativa: **{fallback}**"
+      "fallback_playing": "⚠️ No pude reproducir **{original}** (inicio de sesión requerido). Reproduciendo una alternativa: **{fallback}**",
+      "no_mirror_title": "🎵 No puedo reproducir esta canción",
+      "no_mirror_description": "No encontré **{track}** en YouTube Music (donde busco las canciones). Probablemente el artista no la subió ahí.\n\n¡Intenta enviar un enlace directo de YouTube, así me facilitas el trabajo! :3",
+      "no_mirror_footer": "¡Tranquilo, no es tu culpa!"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> Descargando información de la pista",
       "pending": "¡Espera un momento! Solo necesito un poco más de información del servidor para continuar reproduciendo. ¡Esto tomará unos 5 segundos!"
     },
     "warp": {
+      "switching_ip": "Cambiando de IP...",
+      "switching_ip_description": "YouTube a veces bloquea mi acceso para reproducir música, ¡así que seguiré intentando reproducir tu canción hasta que funcione!",
+      "switching_ip_footer": "¡Esto puede tardar unos segundos, no te asustes!",
       "enable": {
         "title": "✅ Reconexión automática WARP activada",
         "description": "El bot ejecutará warp-cli en este error específico y volverá a intentar después de 5s."

@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> Lütfen Top.gg'de bana oy ver!",
-      "description": "Beğendin mi? Her 12 saatte bir oy ver ve bota destek olmak için [buraya tıkla](https://top.gg/bot/920133124095098881)",
-      "footer": "/play komutunu istediğinde tekrar kullan"
+      "title": "✅ Oynatma sırası bitti",
+      "website_button": "Web sitesi",
+      "support_button": "Destek Sunucusu",
+      "vote_button": "top.gg'de oy ver"
     },
     "track_failed": {
       "title": "❌ Oynatılamadı!",
@@ -40,13 +41,19 @@
       "fallback_reason": "Bilinmeyen sebep (Tamamen ya da bölgesel olarak engellenmiş olabilir.).",
       "footer": "Bu parçayı atlayıp devam ediyorum.",
       "unknown_track": "Bilinmeyen parça",
-      "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**"
+      "fallback_playing": "⚠️ **{original}** adlı parçayı çalamıyorum (giriş yapmak gerekiyor). Alternatif olarak bunu çalıyorum: **{fallback}**",
+      "no_mirror_title": "🎵 Bu şarkıyı çalamıyorum",
+      "no_mirror_description": "**{track}** şarkısını YouTube Music'te (şarkıları aradığım yer) bulamadım. Muhtemelen sanatçı oraya yüklememiş.\n\nDoğrudan YouTube linki göndermeyi dene, işimi kolaylaştırır! :3",
+      "no_mirror_footer": "Rahat ol, bu senin hatan değil!"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> Parça bilgileri indiriliyor",
       "pending": "Sakin ol! Çalmaya devam edebilmem için sunucudan birkaç bilgi daha almam gerekiyor. Bu yaklaşık 5 saniye sürecek!"
     },
     "warp": {
+      "switching_ip": "IP değiştiriliyor...",
+      "switching_ip_description": "YouTube bazen müzik çalmak için erişimimi engelliyor, bu yüzden şarkınızı çalana kadar denemeye devam edeceğim!",
+      "switching_ip_footer": "Bu birkaç saniye sürebilir, endişelenmeyin!",
       "enable": {
         "title": "✅ WARP otomatik yeniden bağlanma açıldı",
         "description": "Belirli hatada warp-cli çalışacak ve 5sn sonra tekrar deneyecek."

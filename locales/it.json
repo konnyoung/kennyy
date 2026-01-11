@@ -30,9 +30,10 @@
   },
   "player": {
     "queue_finished": {
-      "title": "<:topgg:1446666109125394495> Per favore vota per me su Top.gg!",
-      "description": "Ti sta piacendo? Dai un voto ogni 12 ore e aiuta a mantenere il bot attivo [cliccando qui](https://top.gg/bot/920133124095098881)",
-      "footer": "Usa /play di nuovo quando vuoi"
+      "title": "✅ Coda di riproduzione terminata",
+      "website_button": "Sito web",
+      "support_button": "Server di supporto",
+      "vote_button": "Vota su top.gg"
     },
     "track_failed": {
       "title": "❌ Impossibile riprodurre",
@@ -40,13 +41,19 @@
       "fallback_reason": "Motivo sconosciuto (potrebbe essere bloccato per regione o temporaneamente non disponibile).",
       "footer": "Salterò questa traccia e continuerò.",
       "unknown_track": "Traccia sconosciuta",
-      "fallback_playing": "⚠️ Non sono riuscito a riprodurre **{original}** (login richiesto). Riproduzione alternativa: **{fallback}**"
+      "fallback_playing": "⚠️ Non sono riuscito a riprodurre **{original}** (login richiesto). Riproduzione alternativa: **{fallback}**",
+      "no_mirror_title": "🎵 Non posso riprodurre questa canzone",
+      "no_mirror_description": "Non ho trovato **{track}** su YouTube Music (dove cerco le canzoni). Probabilmente l'artista non l'ha caricata lì.\n\nProva a inviare un link diretto di YouTube, mi facilita il lavoro! :3",
+      "no_mirror_footer": "Tranquillo, non è colpa tua!"
     },
     "track_retry": {
       "title": "<:deezer:1448437794090520658> Download info traccia",
       "pending": "Aspetta un momento! Ho bisogno di qualche informazione in più dal server per continuare la riproduzione. Richiederà circa 5 secondi!"
     },
     "warp": {
+      "switching_ip": "Cambio IP...",
+      "switching_ip_description": "YouTube a volte blocca il mio accesso per riprodurre la musica, quindi continuerò a provare a riprodurre la tua canzone finché non funziona!",
+      "switching_ip_footer": "Questo potrebbe richiedere alcuni secondi, non preoccuparti!",
       "enable": {
         "title": "✅ Riconnessione automatica WARP attivata",
         "description": "Il bot eseguirà warp-cli su quell'errore specifico e riproverà dopo 5s."
