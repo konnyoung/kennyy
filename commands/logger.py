@@ -1,42 +1,81 @@
 """
 Sistema de logs para o bot de música.
-Envia embeds para um canal de logs configurado via variável de ambiente LOG_CHANNEL_ID.
+Envia embeds via webhooks configurados na variável de ambiente LOG_WEBHOOKS.
+Suporta múltiplos webhooks separados por vírgula.
 """
 import discord
+import aiohttp
 import os
+import re
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 
 class BotLogger:
-    """Classe para gerenciar logs do bot"""
+    """Classe para gerenciar logs do bot via webhooks"""
     
     def __init__(self, bot):
         self.bot = bot
-        self._log_channel_id: Optional[int] = None
-        self._load_log_channel()
+        self._webhook_urls: List[str] = []
+        self._load_webhooks()
     
-    def _load_log_channel(self) -> None:
-        """Carrega o ID do canal de logs da variável de ambiente"""
-        channel_id = os.getenv("LOG_CHANNEL_ID", "").strip()
-        if channel_id and channel_id.isdigit():
-            self._log_channel_id = int(channel_id)
+    def _load_webhooks(self) -> None:
+        """Carrega as URLs dos webhooks da variável de ambiente"""
+        webhooks_env = os.getenv("LOG_WEBHOOKS", "").strip()
+        if webhooks_env:
+            # Suporta múltiplos webhooks separados por vírgula
+            self._webhook_urls = [
+                url.strip() for url in webhooks_env.split(",") 
+                if url.strip() and self._is_valid_webhook_url(url.strip())
+            ]
         else:
-            self._log_channel_id = None
+            self._webhook_urls = []
     
-    async def _get_log_channel(self) -> Optional[discord.TextChannel]:
-        """Obtém o canal de logs"""
-        if self._log_channel_id is None:
+    def _is_valid_webhook_url(self, url: str) -> bool:
+        """Verifica se a URL é um webhook válido do Discord"""
+        pattern = r'^https://discord\.com/api/webhooks/\d+/[\w-]+$'
+        return bool(re.match(pattern, url))
+    
+    def _get_node_display_name(self, node=None) -> str | None:
+        """Obtém o nome de exibição do node (mesmo método do bot principal)"""
+        if node is None:
+            # Tenta pegar qualquer node conectado
+            try:
+                nodes = getattr(self.bot, '_wavelink_nodes', None)
+                if nodes:
+                    for n in nodes.values():
+                        if getattr(n, 'connected', False):
+                            node = n
+                            break
+            except Exception:
+                pass
+        
+        if node is None:
             return None
-        
-        try:
-            channel = await self.bot.fetch_channel(self._log_channel_id)
-            if isinstance(channel, discord.TextChannel):
-                return channel
-        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-            pass
-        
-        return None
+            
+        identifier = getattr(node, "identifier", None)
+        if not identifier:
+            return None
+
+        identifier_str = str(identifier)
+
+        for cfg in getattr(self.bot, "_lavalink_cfgs", []) or []:
+            try:
+                if str(cfg.get("id")) != identifier_str:
+                    continue
+                name = str(cfg.get("name") or "").strip()
+                if name:
+                    return name
+            except Exception:
+                continue
+
+        match = re.match(r"^node(\d+)$", identifier_str)
+        if match:
+            env_name = (os.getenv(f"LAVALINK_NODE{match.group(1)}_NAME", "") or "").strip()
+            if env_name:
+                return env_name
+
+        return identifier_str
     
     async def _is_logging_enabled(self) -> bool:
         """Verifica se os logs estão habilitados no MongoDB"""
@@ -82,21 +121,35 @@ class BotLogger:
 
         return default
     
-    async def _send_log(self, embed: discord.Embed) -> bool:
-        """Envia uma embed para o canal de logs se estiver habilitado"""
+    def _add_node_footer(self, embed: discord.Embed, node=None) -> None:
+        """Adiciona o footer com o nome do node"""
+        node_name = self._get_node_display_name(node)
+        if node_name:
+            embed.set_footer(text=f"Node: {node_name}")
+    
+    async def _send_log(self, embed: discord.Embed, node=None) -> bool:
+        """Envia uma embed para todos os webhooks configurados"""
         if not await self._is_logging_enabled():
             return False
         
-        channel = await self._get_log_channel()
-        if channel is None:
+        if not self._webhook_urls:
             return False
         
-        try:
-            await channel.send(embed=embed)
-            return True
-        except (discord.Forbidden, discord.HTTPException) as exc:
-            print(f"Erro ao enviar log: {exc}")
-            return False
+        # Adiciona o footer com o node
+        self._add_node_footer(embed, node)
+        
+        success = False
+        
+        async with aiohttp.ClientSession() as session:
+            for webhook_url in self._webhook_urls:
+                try:
+                    webhook = discord.Webhook.from_url(webhook_url, session=session)
+                    await webhook.send(embed=embed)
+                    success = True
+                except Exception as exc:
+                    print(f"Erro ao enviar log via webhook: {exc}")
+        
+        return success
     
     async def log_guild_join(self, guild: discord.Guild) -> None:
         """Registra quando o bot entra em um servidor, respeitando o idioma local."""
@@ -358,6 +411,7 @@ class BotLogger:
         guild_name: str,
         *,
         guild_id: Optional[int] = None,
+        node=None,
     ) -> None:
         """Registra quando um usuário inicia uma nova música, respeitando o idioma do servidor."""
 
@@ -433,7 +487,7 @@ class BotLogger:
         if artwork_url:
             embed.set_thumbnail(url=artwork_url)
 
-        await self._send_log(embed)
+        await self._send_log(embed, node=node)
     
     async def log_error(
         self,
@@ -443,6 +497,7 @@ class BotLogger:
         guild_name: Optional[str] = None,
         guild_id: Optional[int] = None,
         additional_info: Optional[str] = None,
+        node=None,
     ) -> None:
         """Registra erros do bot respeitando o idioma do servidor."""
 
@@ -486,7 +541,7 @@ class BotLogger:
                 inline=False,
             )
 
-        await self._send_log(embed)
+        await self._send_log(embed, node=node)
 
     async def log_lavalink_error(
         self,
@@ -494,6 +549,7 @@ class BotLogger:
         error_message: str,
         guild_name: Optional[str] = None,
         guild_id: Optional[int] = None,
+        node=None,
     ) -> None:
         """Registra erros específicos do Lavalink."""
 
@@ -510,4 +566,5 @@ class BotLogger:
             guild_name=guild_name,
             guild_id=guild_id,
             additional_info=additional_info,
+            node=node,
         )

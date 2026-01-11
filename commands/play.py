@@ -944,6 +944,7 @@ class PlayCommands(commands.Cog):
         channel: discord.abc.Connectable,
         *,
         attempts: int = 2,
+        preferred_source: str | None = None,
     ) -> wavelink.Player:
         last_error: Exception | None = None
 
@@ -962,6 +963,8 @@ class PlayCommands(commands.Cog):
             raise RuntimeError("Nenhum node Lavalink disponível para conexão")
         
         print(f"ℹ️ {len(available_nodes)} node(s) disponível(is) para conexão")
+        if preferred_source:
+            print(f"🎯 Source preferida: {preferred_source}")
 
         excluded_nodes = set()  # Nodes que falharam e devem ser evitados nos retries
         
@@ -992,18 +995,46 @@ class PlayCommands(commands.Cog):
                 # Escolhe qual node usar
                 selected_node = None
                 
-                # Se há afinidade válida e o node está disponível, usa ele
-                if preferred_node_id and preferred_node_id not in excluded_nodes:
+                # PRIORIDADE 1: Se tem source preferida, tenta usar um node que a suporta
+                if preferred_source and hasattr(self.bot, 'get_node_for_source'):
+                    source_node = self.bot.get_node_for_source(preferred_source)
+                    if source_node and source_node.identifier not in excluded_nodes:
+                        selected_node = source_node
+                        print(f"🎵 Usando node que suporta {preferred_source}: {source_node.identifier}")
+                
+                # PRIORIDADE 2: Se há afinidade válida e o node está disponível, usa ele
+                if selected_node is None and preferred_node_id and preferred_node_id not in excluded_nodes:
                     try:
                         preferred_node = wavelink.Pool.get_node(preferred_node_id)
                         if preferred_node.status == wavelink.NodeStatus.CONNECTED:
-                            selected_node = preferred_node
-                            print(f"🎯 Usando node com afinidade: {preferred_node_id}")
+                            # Verifica se o node com afinidade suporta a source
+                            if preferred_source and hasattr(self.bot, '_node_sources'):
+                                node_sources = self.bot._node_sources.get(preferred_node_id, ["youtube"])
+                                if preferred_source in node_sources:
+                                    selected_node = preferred_node
+                                    print(f"🎯 Usando node com afinidade (suporta {preferred_source}): {preferred_node_id}")
+                                else:
+                                    print(f"⚠️ Node com afinidade {preferred_node_id} não suporta {preferred_source}, buscando alternativa...")
+                            else:
+                                selected_node = preferred_node
+                                print(f"🎯 Usando node com afinidade: {preferred_node_id}")
                     except Exception:
                         pass
                 
-                # Se não tem afinidade ou node preferido não está disponível, escolhe o com menos players
+                # PRIORIDADE 3: Escolhe o node com menos players (que suporte a source se especificada)
                 if selected_node is None:
+                    # Filtra nodes que suportam a source se especificada
+                    if preferred_source and hasattr(self.bot, '_node_sources'):
+                        source_compatible_nodes = [
+                            n for n in usable_nodes
+                            if preferred_source in self.bot._node_sources.get(n.identifier, ["youtube"])
+                        ]
+                        if source_compatible_nodes:
+                            usable_nodes = source_compatible_nodes
+                            print(f"ℹ️ {len(usable_nodes)} node(s) suportam {preferred_source}")
+                        else:
+                            print(f"⚠️ Nenhum node suporta {preferred_source}, usando qualquer disponível")
+                    
                     # Ordena por quantidade de players (menos players = menos carga)
                     usable_nodes.sort(key=lambda n: len(getattr(n, 'players', {})))
                     selected_node = usable_nodes[0]
@@ -1136,6 +1167,8 @@ class PlayCommands(commands.Cog):
         interaction: discord.Interaction,
         player: wavelink.Player,
         channel: discord.abc.Connectable,
+        *,
+        preferred_source: str | None = None,
     ) -> wavelink.Player:
         """Reconstrói o player garantindo que a sessão no Lavalink seja recriada."""
 
@@ -1178,7 +1211,7 @@ class PlayCommands(commands.Cog):
         except Exception as destroy_exc:
             print(f"Falha ao remover player remoto antes de reconstruir: {destroy_exc}")
 
-        new_player = await self._connect_player_with_retry(interaction, channel)
+        new_player = await self._connect_player_with_retry(interaction, channel, preferred_source=preferred_source)
         new_player.queue.mode = loop_mode
         new_player.loop_mode_override = loop_mode
         new_player.autoplay = autoplay_mode
@@ -1212,7 +1245,7 @@ class PlayCommands(commands.Cog):
             pass
         return new_player
 
-    async def _ensure_active_player(self, interaction: discord.Interaction) -> wavelink.Player:
+    async def _ensure_active_player(self, interaction: discord.Interaction, preferred_source: str | None = None) -> wavelink.Player:
         """Garante que existe um player válido e com sessão ativa no Lavalink."""
 
         guild = interaction.guild
@@ -1228,47 +1261,70 @@ class PlayCommands(commands.Cog):
         if player:
             needs_rebuild = False
             node = getattr(player, "node", None)
+            
+            # IMPORTANTE: Se o player está tocando, NÃO faz rebuild por nenhum motivo
+            # relacionado a source - apenas adiciona à fila
+            is_playing = player.playing or player.current is not None
 
             if not node or node.status != wavelink.NodeStatus.CONNECTED:
                 needs_rebuild = True
+                print(f"⚠️ Rebuild necessário: node não conectado")
             elif not player.connected:
                 needs_rebuild = True
+                print(f"⚠️ Rebuild necessário: player não conectado")
             else:
-                # Verifica se a sessão do player é válida comparando com a sessão atual do nó
-                player_session = getattr(player, "_session_id", None)
-                node_session = getattr(node, "session_id", None)
-                
-                # Se o player não tem session_id ou ela não bate com a do nó, precisa rebuild
-                if player_session is None or (node_session and player_session != node_session):
-                    print(f"⚠️ Player sem session válida (player: {player_session}, nó: {node_session}). Rebuild necessário.")
-                    needs_rebuild = True
-                else:
-                    # Valida se o player ainda existe no servidor Lavalink
-                    try:
-                        info = await node.fetch_player_info(guild.id)
-                    except wavelink.LavalinkException as exc:
-                        status = getattr(exc, "status", None)
-                        reason = str(getattr(exc, "error", "")).lower()
-                        if status in {401, 402, 403, 404, 410} or "session" in reason:
-                            info = None
-                        else:
-                            raise
-                    except wavelink.NodeException:
-                        info = None
-                    except Exception as exc:
-                        # Qualquer outro erro ao validar - força rebuild
-                        print(f"⚠️ Erro ao validar player info: {exc}")
-                        info = None
-
-                    if info is None:
+                # Só verifica compatibilidade de source se o player NÃO está tocando
+                if preferred_source and hasattr(self.bot, '_node_sources') and not is_playing:
+                    node_id = getattr(node, "identifier", None)
+                    node_sources = self.bot._node_sources.get(node_id, ["youtube"])
+                    if preferred_source not in node_sources:
+                        print(f"⚠️ Node atual ({node_id}) não suporta {preferred_source}. Rebuild necessário.")
                         needs_rebuild = True
+                elif preferred_source and hasattr(self.bot, '_node_sources') and is_playing:
+                    node_id = getattr(node, "identifier", None)
+                    node_sources = self.bot._node_sources.get(node_id, ["youtube"])
+                    if preferred_source not in node_sources:
+                        print(f"ℹ️ Node atual ({node_id}) não suporta {preferred_source}, mas player está tocando. Track será adicionada à fila.")
+                
+                # Só verifica sessão/player info se NÃO está tocando
+                # Se está tocando, o player claramente existe e funciona
+                if not needs_rebuild and not is_playing:
+                    # Verifica se a sessão do player é válida comparando com a sessão atual do nó
+                    player_session = getattr(player, "_session_id", None)
+                    node_session = getattr(node, "session_id", None)
+                    
+                    # Se o player não tem session_id ou ela não bate com a do nó, precisa rebuild
+                    if player_session is None or (node_session and player_session != node_session):
+                        print(f"⚠️ Player sem session válida (player: {player_session}, nó: {node_session}). Rebuild necessário.")
+                        needs_rebuild = True
+                    else:
+                        # Valida se o player ainda existe no servidor Lavalink
+                        try:
+                            info = await node.fetch_player_info(guild.id)
+                        except wavelink.LavalinkException as exc:
+                            status = getattr(exc, "status", None)
+                            reason = str(getattr(exc, "error", "")).lower()
+                            if status in {401, 402, 403, 404, 410} or "session" in reason:
+                                info = None
+                            else:
+                                raise
+                        except wavelink.NodeException:
+                            info = None
+                        except Exception as exc:
+                            # Qualquer outro erro ao validar - força rebuild
+                            print(f"⚠️ Erro ao validar player info: {exc}")
+                            info = None
+
+                        if info is None:
+                            print(f"⚠️ Player info retornou None. Rebuild necessário.")
+                            needs_rebuild = True
 
             if needs_rebuild:
-                player = await self._rebuild_player(interaction, player, user_channel)
+                player = await self._rebuild_player(interaction, player, user_channel, preferred_source=preferred_source)
         else:
             await self._cleanup_failed_voice_connection(guild)
             await self._force_destroy_remote_player(guild.id)
-            player = await self._connect_player_with_retry(interaction, user_channel)
+            player = await self._connect_player_with_retry(interaction, user_channel, preferred_source=preferred_source)
 
         if player.channel and player.channel.id != user_channel.id:
             try:
@@ -1311,6 +1367,13 @@ class PlayCommands(commands.Cog):
             if "player" in message and "not found" in message:
                 return True
             return False
+
+        # Verifica se o node atual suporta a source da track antes de tentar tocar
+        if hasattr(self.bot, 'ensure_player_can_play_track'):
+            try:
+                player = await self.bot.ensure_player_can_play_track(player, track)
+            except Exception as e:
+                print(f"Erro ao verificar/trocar node para track: {e}")
 
         try:
             await player.play(track)
@@ -1485,9 +1548,16 @@ class PlayCommands(commands.Cog):
         is_url = self.is_url(query)
         provider = service.value if service else None
 
-        # Primeiro: garantir player conectado
+        # Detectar source da query para selecionar node correto
+        detected_source = None
+        if hasattr(self.bot, 'detect_source_from_query'):
+            detected_source = self.bot.detect_source_from_query(query)
+            if detected_source:
+                print(f"🎵 Source detectada da query: {detected_source}")
+
+        # Primeiro: garantir player conectado (com preferência pelo node que suporta a source)
         try:
-            player = await self._ensure_active_player(interaction)
+            player = await self._ensure_active_player(interaction, preferred_source=detected_source)
         except Exception as e:
             embed = self._error_embed(
                 interaction,
